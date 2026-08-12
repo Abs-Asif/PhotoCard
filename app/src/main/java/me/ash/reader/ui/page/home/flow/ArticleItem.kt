@@ -600,21 +600,6 @@ fun ArticleItemMenuContent(
             )
         },
     )
-    DropdownMenuItem(
-        text = { Text(text = starText) },
-        onClick = {
-            onToggleStarred(articleWithFeed)
-            onItemClick?.invoke()
-        },
-        leadingIcon = {
-            Icon(
-                imageVector = starImageVector,
-                contentDescription = null,
-                modifier = Modifier.size(iconSize),
-            )
-        },
-    )
-
     if (onMarkAboveAsRead != null || onMarkBelowAsRead != null) {
         HorizontalDivider()
     }

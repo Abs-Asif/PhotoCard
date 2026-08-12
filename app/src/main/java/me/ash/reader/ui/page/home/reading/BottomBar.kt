@@ -114,24 +114,6 @@ fun BottomBar(
                             onUnread(!isUnread)
                         }
                         CanBeDisabledIconButton(
-                            modifier = Modifier.size(40.dp),
-                            disabled = false,
-                            imageVector = if (isStarred) {
-                                Icons.Rounded.Star
-                            } else {
-                                Icons.Rounded.StarOutline
-                            },
-                            contentDescription = stringResource(if (isStarred) R.string.mark_as_unstar else R.string.mark_as_starred),
-                            tint = if (isStarred) {
-                                MaterialTheme.colorScheme.onSecondaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.outline
-                            },
-                        ) {
-                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                            onStarred(!isStarred)
-                        }
-                        CanBeDisabledIconButton(
                             disabled = !isNextArticleAvailable,
                             modifier = Modifier.size(40.dp),
                             imageVector = Icons.Rounded.ExpandMore,
