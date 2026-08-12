@@ -105,34 +105,10 @@ fun SettingsPage(
                 }
                 item {
                     SelectableSettingGroupItem(
-                        title = stringResource(R.string.accounts),
-                        desc = stringResource(R.string.accounts_desc),
-                        icon = Icons.Outlined.AccountCircle,
-                        onClick = navigateToAccounts
-                    )
-                }
-                item {
-                    SelectableSettingGroupItem(
-                        title = stringResource(R.string.color_and_style),
-                        desc = stringResource(R.string.color_and_style_desc),
-                        icon = Icons.Outlined.Palette,
-                        onClick = navigateToColorAndStyle
-                    )
-                }
-                item {
-                    SelectableSettingGroupItem(
                         title = stringResource(R.string.interaction),
                         desc = stringResource(R.string.interaction_desc),
                         icon = Icons.Outlined.TouchApp,
                         onClick = navigateToInteraction
-                    )
-                }
-                item {
-                    SelectableSettingGroupItem(
-                        title = stringResource(R.string.languages),
-                        desc = Locale.getDefault().toDisplayName(),
-                        icon = Icons.Outlined.Language,
-                        onClick = navigateToLanguages
                     )
                 }
                 item {

@@ -707,32 +707,7 @@ fun FlowPage(
                 }
             },
             floatingActionButtonPosition = FabPosition.Center,
-            bottomBar = {
-                FilterBar(
-                    modifier =
-                        with(sharedTransitionScope) {
-                            Modifier.sharedElement(
-                                sharedContentState = rememberSharedContentState("filterBar"),
-                                animatedVisibilityScope = animatedVisibilityScope,
-                            )
-                        },
-                    filter = filterUiState.filter,
-                    filterBarStyle = filterBarStyle.value,
-                    filterBarFilled = true,
-                    filterBarPadding = filterBarPadding.dp,
-                    filterBarTonalElevation = filterBarTonalElevation.value.dp,
-                ) {
-                    if (filterUiState.filter != it) {
-                        viewModel.changeFilter(filterUiState.copy(filter = it))
-                    } else {
-                        scope.launch {
-                            if (listState.firstVisibleItemIndex != 0) {
-                                listState.animateScrollToItem(0)
-                            }
-                        }
-                    }
-                }
-            },
+            bottomBar = {},
         )
         currentPullToLoadState?.let {
             PullToSyncIndicator(pullToLoadState = it, isSyncing = isSyncing)

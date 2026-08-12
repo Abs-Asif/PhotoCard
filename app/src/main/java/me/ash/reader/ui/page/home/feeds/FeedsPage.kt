@@ -231,10 +231,7 @@ fun FeedsPage(
             PullToRefreshBox(state = syncingState, isRefreshing = isSyncing, onRefresh = doSync) {
                 LazyColumn(modifier = Modifier.fillMaxSize().drawVerticalScrollIndicator(listState), state = listState) {
                     item {
-                        DisplayText(text = feedsUiState.account?.name ?: "", desc = "") {
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.ContextClick)
-                            accountTabVisible = true
-                        }
+                        DisplayText(text = feedsUiState.account?.name ?: "", desc = "")
                     }
                     item {
                         FeedsBanner(

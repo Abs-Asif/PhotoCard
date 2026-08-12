@@ -1,5 +1,8 @@
 import java.io.FileInputStream
 import java.util.Properties
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.TimeZone
 import org.jetbrains.kotlin.compose.compiler.gradle.ComposeFeatureFlag
 
 plugins {
@@ -22,6 +25,12 @@ fun fetchGitCommitHash(): String {
     return process.inputStream.bufferedReader().use { it.readText().trim() }
 }
 
+fun getVersionNameByDate(): String {
+    val formatter = SimpleDateFormat("yyyy.MM.dd.HH.mm")
+    formatter.timeZone = TimeZone.getTimeZone("UTC")
+    return formatter.format(Date())
+}
+
 val gitCommitHash = fetchGitCommitHash()
 val keyProps = Properties()
 val releaseKeyPropsFile: File = rootProject.file("signature/keystore_release.properties")
@@ -39,16 +48,16 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "me.ash.reader"
+        applicationId = "photo.card.abdullah"
         minSdk = 26
         targetSdk = 34
-        versionCode = 47
-        versionName = "0.16.2"
+        versionCode = (System.currentTimeMillis() / 60000).toInt()
+        versionName = getVersionNameByDate()
 
         buildConfigField(
             "String",
             "USER_AGENT_STRING",
-            "\"ReadYou/${versionName}(${versionCode})\"",
+            "\"PhotoCard/${versionName}(${versionCode})\"",
         )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -95,7 +104,7 @@ android {
     applicationVariants.all {
         outputs.all {
             (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
-                "ReadYou-${defaultConfig.versionName}-${gitCommitHash}.apk"
+                "PhotoCard-${defaultConfig.versionName}-${gitCommitHash}.apk"
         }
     }
     kotlinOptions {

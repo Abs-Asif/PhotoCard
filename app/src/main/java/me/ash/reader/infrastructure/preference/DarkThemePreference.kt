@@ -37,11 +37,7 @@ sealed class DarkThemePreference(val value: Int) : Preference() {
 
     @Composable
     @ReadOnlyComposable
-    fun isDarkTheme(): Boolean = when (this) {
-        UseDeviceTheme -> isSystemInDarkTheme()
-        ON -> true
-        OFF -> false
-    }
+    fun isDarkTheme(): Boolean = isSystemInDarkTheme()
 
     companion object {
 

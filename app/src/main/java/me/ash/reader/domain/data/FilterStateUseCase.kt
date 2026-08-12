@@ -58,6 +58,6 @@ constructor(
 data class FilterState(
     val group: Group? = null,
     val feed: Feed? = null,
-    val filter: Filter = Filter.All,
+    val filter: Filter = Filter.Unread,
     val searchContent: String? = null,
 )

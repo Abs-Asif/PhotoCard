@@ -47,7 +47,7 @@ sealed class InitialFilterPreference(val value: Int) : Preference() {
     companion object {
 
         val default = Unread
-        val values = listOf(Starred, Unread, All)
+        val values = listOf(Unread)
 
         fun fromPreferences(preferences: Preferences) =
             when (preferences[DataStoreKey.keys[initialFilter]?.key as Preferences.Key<Int>]) {

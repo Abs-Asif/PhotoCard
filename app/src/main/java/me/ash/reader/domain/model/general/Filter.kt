@@ -69,6 +69,6 @@ class Filter private constructor(
             iconOutline = Icons.AutoMirrored.Rounded.Subject,
             iconFilled = Icons.AutoMirrored.Rounded.Subject,
         )
-        val values = listOf(Starred, Unread, All)
+        val values = listOf(Unread)
     }
 }
