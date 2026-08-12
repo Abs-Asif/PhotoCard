@@ -228,57 +228,24 @@ abstract class AbstractRssRepository(
         )
         return when {
             groupId != null ->
-                when {
-                    isStarred ->
-                        articleDao.queryArticleWithFeedByGroupIdWhenIsStarred(
-                            accountId,
-                            groupId,
-                            true,
-                        )
-
-                    isUnread ->
-                        articleDao.queryArticleWithFeedByGroupIdWhenIsUnread(
-                            accountId,
-                            groupId,
-                            true,
-                            sortAscending = sortAscending,
-                        )
-
-                    else -> articleDao.queryArticleWithFeedByGroupIdWhenIsAll(accountId, groupId)
-                }
+                articleDao.queryArticleWithFeedByGroupIdWhenIsAll(
+                    accountId,
+                    groupId,
+                    sortAscending = sortAscending,
+                )
 
             feedId != null ->
-                when {
-                    isStarred ->
-                        articleDao.queryArticleWithFeedByFeedIdWhenIsStarred(
-                            accountId,
-                            feedId,
-                            true,
-                        )
-
-                    isUnread ->
-                        articleDao.queryArticleWithFeedByFeedIdWhenIsUnread(
-                            accountId,
-                            feedId,
-                            true,
-                            sortAscending = sortAscending,
-                        )
-
-                    else -> articleDao.queryArticleWithFeedByFeedIdWhenIsAll(accountId, feedId)
-                }
+                articleDao.queryArticleWithFeedByFeedIdWhenIsAll(
+                    accountId,
+                    feedId,
+                    sortAscending = sortAscending,
+                )
 
             else ->
-                when {
-                    isStarred -> articleDao.queryArticleWithFeedWhenIsStarred(accountId, true)
-                    isUnread ->
-                        articleDao.queryArticleWithFeedWhenIsUnread(
-                            accountId,
-                            true,
-                            sortAscending = sortAscending,
-                        )
-
-                    else -> articleDao.queryArticleWithFeedWhenIsAll(accountId)
-                }
+                articleDao.queryArticleWithFeedWhenIsAll(
+                    accountId,
+                    sortAscending = sortAscending,
+                )
         }
     }
 
@@ -425,62 +392,27 @@ abstract class AbstractRssRepository(
         )
         return when {
             groupId != null ->
-                when {
-                    isStarred ->
-                        articleDao.searchArticleByGroupIdWhenIsStarred(
-                            accountId,
-                            content,
-                            groupId,
-                            true,
-                        )
-
-                    isUnread ->
-                        articleDao.searchArticleByGroupIdWhenIsUnread(
-                            accountId,
-                            content,
-                            groupId,
-                            true,
-                            sortAscending,
-                        )
-
-                    else -> articleDao.searchArticleByGroupIdWhenAll(accountId, content, groupId)
-                }
+                articleDao.searchArticleByGroupIdWhenAll(
+                    accountId,
+                    content,
+                    groupId,
+                    sortAscending = sortAscending,
+                )
 
             feedId != null ->
-                when {
-                    isStarred ->
-                        articleDao.searchArticleByFeedIdWhenIsStarred(
-                            accountId,
-                            content,
-                            feedId,
-                            true,
-                        )
-
-                    isUnread ->
-                        articleDao.searchArticleByFeedIdWhenIsUnread(
-                            accountId,
-                            content,
-                            feedId,
-                            true,
-                            sortAscending,
-                        )
-
-                    else -> articleDao.searchArticleByFeedIdWhenAll(accountId, content, feedId)
-                }
+                articleDao.searchArticleByFeedIdWhenAll(
+                    accountId,
+                    content,
+                    feedId,
+                    sortAscending = sortAscending,
+                )
 
             else ->
-                when {
-                    isStarred -> articleDao.searchArticleWhenIsStarred(accountId, content, true)
-                    isUnread ->
-                        articleDao.searchArticleWhenIsUnread(
-                            accountId,
-                            content,
-                            true,
-                            sortAscending,
-                        )
-
-                    else -> articleDao.searchArticleWhenAll(accountId, content)
-                }
+                articleDao.searchArticleWhenAll(
+                    accountId,
+                    content,
+                    sortAscending = sortAscending,
+                )
         }
     }
 

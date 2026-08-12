@@ -3,6 +3,7 @@ package me.ash.reader.infrastructure.rss
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import okhttp3.OkHttpClient
+import me.ash.reader.domain.repository.ArticleDao
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
@@ -50,6 +51,9 @@ class RssHelperTest {
     @Mock
     private lateinit var mockOkHttpClient: OkHttpClient
 
+    @Mock
+    private lateinit var mockArticleDao: ArticleDao
+
     private lateinit var rssHelper: RssHelper
 
     @Before
@@ -57,7 +61,8 @@ class RssHelperTest {
         mockContext = mock<Context> { }
         mockIODispatcher = mock<CoroutineDispatcher> {}
         mockOkHttpClient = mock<OkHttpClient> {}
-        rssHelper = RssHelper(mockContext, mockIODispatcher, mockOkHttpClient)
+        mockArticleDao = mock<ArticleDao> {}
+        rssHelper = RssHelper(mockContext, mockIODispatcher, mockOkHttpClient, mockArticleDao)
     }
 
     @Test

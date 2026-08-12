@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -35,6 +36,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -100,7 +106,6 @@ fun TipsAndSupportPage(
     val view = LocalView.current
     val scope = rememberCoroutineScope()
     var currentVersion by remember { mutableStateOf("") }
-    var showSponsorDialog by remember { mutableStateOf(false) }
 
     val morphProgress = remember { Animatable(0f) }
 
@@ -240,63 +245,49 @@ fun TipsAndSupportPage(
                     }
                 }
                 item {
-                    Spacer(modifier = Modifier.height(48.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
                     ) {
-                        // Sponsor
-                        RoundIconButton(
-                            RoundIconButtonType.Sponsor(
-                                backgroundColor = MaterialTheme.colorScheme.tertiaryContainer alwaysLight true,
-                            ) {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                view.playSoundEffect(SoundEffectConstants.CLICK)
-                                showSponsorDialog = true
-                            })
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        // GitHub
-                        RoundIconButton(
-                            RoundIconButtonType.GitHub(
-                                backgroundColor = MaterialTheme.colorScheme.primaryContainer alwaysLight true,
-                            ) {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                view.playSoundEffect(SoundEffectConstants.CLICK)
-                                context.openURL(
-                                    context.getString(R.string.github_link),
-                                    OpenLinkPreference.AutoPreferCustomTabs
+                        listOf(
+                            Triple("Facebook", "https://www.facebook.com/abdullahbariasif", "https://www.facebook.com/abdullahbariasif"),
+                            Triple("WhatsApp", "01538310838", "https://api.whatsapp.com/send?phone=8801538310838"),
+                            Triple("Call", "+8801738745285", "tel:+8801738745285"),
+                            Triple("Email", "abdullah.bari.2026@gmail.com", "mailto:abdullah.bari.2026@gmail.com")
+                        ).forEach { (title, display, uriString) ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                                    .clickable {
+                                        runCatching {
+                                            val action = if (uriString.startsWith("tel:")) Intent.ACTION_DIAL else if (uriString.startsWith("mailto:")) Intent.ACTION_SENDTO else Intent.ACTION_VIEW
+                                            context.startActivity(Intent(action, Uri.parse(uriString)))
+                                        }
+                                    },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                                 )
-                            })
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        // Telegram
-                        RoundIconButton(
-                            RoundIconButtonType.Telegram(
-                                backgroundColor = MaterialTheme.colorScheme.primaryContainer alwaysLight true,
                             ) {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                view.playSoundEffect(SoundEffectConstants.CLICK)
-                                context.openURL(
-                                    context.getString(R.string.telegram_link),
-                                    OpenLinkPreference.AutoPreferCustomTabs
-                                )
-                            })
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        // Help
-                        RoundIconButton(
-                            RoundIconButtonType.Help(
-                                backgroundColor = MaterialTheme.colorScheme.secondaryContainer alwaysLight true,
-                            ) {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                view.playSoundEffect(SoundEffectConstants.CLICK)
-                                context.openURL(
-                                    context.getString(R.string.wiki_link),
-                                    OpenLinkPreference.AutoPreferCustomTabs
-                                )
-                            })
+                                Column(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    Text(
+                                        text = title,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = display,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
                     }
                     Spacer(modifier = Modifier.height(48.dp))
                 }
@@ -305,103 +296,4 @@ fun TipsAndSupportPage(
     )
 
     UpdateDialog()
-    if (showSponsorDialog) {
-        SponsorDialog { showSponsorDialog = false }
-    }
-}
-
-@Immutable
-sealed class RoundIconButtonType(
-    val iconResource: Int? = null,
-    val iconVector: ImageVector? = null,
-    val descResource: Int? = null,
-    val descString: String? = null,
-    open val size: Dp = 24.dp,
-    open val offset: Modifier = Modifier.offset(),
-    open val backgroundColor: Color = Color.Unspecified,
-    open val onClick: () -> Unit = {},
-) {
-
-    @Immutable
-    data class Sponsor(
-        val desc: Int = R.string.sponsor,
-        override val backgroundColor: Color,
-        override val onClick: () -> Unit = {},
-    ) : RoundIconButtonType(
-        iconVector = Icons.Rounded.VolunteerActivism,
-        descResource = desc,
-        backgroundColor = backgroundColor,
-        onClick = onClick,
-    )
-
-    @Immutable
-    data class GitHub(
-        val desc: String = "GitHub",
-        override val backgroundColor: Color,
-        override val onClick: () -> Unit = {},
-    ) : RoundIconButtonType(
-        iconResource = R.drawable.ic_github,
-        descString = desc,
-        backgroundColor = backgroundColor,
-        onClick = onClick,
-    )
-
-    @Immutable
-    data class Telegram(
-        val desc: String = "Telegram",
-        override val offset: Modifier = Modifier.offset(x = (-1).dp),
-        override val backgroundColor: Color,
-        override val onClick: () -> Unit = {},
-    ) : RoundIconButtonType(
-        iconResource = R.drawable.ic_telegram,
-        descString = desc,
-        backgroundColor = backgroundColor,
-        onClick = onClick,
-    )
-
-    @Immutable
-    data class Help(
-        val desc: Int = R.string.help,
-        override val offset: Modifier = Modifier.offset(x = (3).dp),
-        override val backgroundColor: Color,
-        override val onClick: () -> Unit = {},
-    ) : RoundIconButtonType(
-        iconVector = Icons.Rounded.TipsAndUpdates,
-        descResource = desc,
-        backgroundColor = backgroundColor,
-        onClick = onClick,
-    )
-}
-
-@Composable
-private fun RoundIconButton(type: RoundIconButtonType) {
-    IconButton(
-        modifier = Modifier
-            .size(70.dp)
-            .background(
-                color = type.backgroundColor,
-                shape = CircleShape,
-            ),
-        onClick = { type.onClick() }
-    ) {
-        when (type) {
-            is RoundIconButtonType.Sponsor, is RoundIconButtonType.Help -> {
-                Icon(
-                    modifier = type.offset.size(type.size),
-                    imageVector = type.iconVector!!,
-                    contentDescription = stringResource(type.descResource!!),
-                    tint = MaterialTheme.colorScheme.onSurface alwaysLight true,
-                )
-            }
-
-            is RoundIconButtonType.GitHub, is RoundIconButtonType.Telegram -> {
-                Icon(
-                    modifier = type.offset.size(type.size),
-                    painter = painterResource(type.iconResource!!),
-                    contentDescription = type.descString,
-                    tint = MaterialTheme.colorScheme.onSurface alwaysLight true,
-                )
-            }
-        }
-    }
 }

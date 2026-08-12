@@ -243,68 +243,13 @@ fun FeedsPage(
                         }
                     }
 
-                    item {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 26.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.feeds),
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                            IconButton(
-                                onClick = {
-                                    if (hasGroupVisible) collapseAllGroups() else expandAllGroups()
-                                },
-                                modifier = Modifier
-                                    .padding(end = 8.dp)
-                                    .size(28.dp),
-                            ) {
-                                Icon(
-                                    imageVector =
-                                        if (hasGroupVisible) Icons.Rounded.UnfoldLess
-                                        else Icons.Rounded.UnfoldMore,
-                                    contentDescription = stringResource(R.string.unfold_less),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
                     itemsIndexed(groupWithFeedList) { _, (group, feeds) ->
                         GroupWithFeedsContainer {
-                            GroupItem(
-                                isExpanded = {
-                                    groupsVisible.getOrPut(group.id, groupListExpand::value)
-                                },
-                                group = group,
-                                onExpanded = {
-                                    groupsVisible[group.id] =
-                                        groupsVisible
-                                            .getOrPut(group.id, groupListExpand::value)
-                                            .not()
-                                },
-                                onLongClick = { scope.launch { groupDrawerState.show() } },
-                            ) {
-                                feedsViewModel.changeFilter(
-                                    filterState.copy(group = group, feed = null)
-                                )
-                                navigationToFlow()
-                            }
-
                             feeds.forEachIndexed { index, feed ->
                                 FeedItem(
                                     feed = feed,
                                     isLastItem = { index == feeds.lastIndex },
-                                    isExpanded = {
-                                        groupsVisible.getOrPut(feed.groupId, groupListExpand::value)
-                                    },
+                                    isExpanded = { true },
                                     onClick = {
                                         feedsViewModel.changeFilter(
                                             filterState.copy(feed = feed, group = null)
@@ -325,24 +270,6 @@ fun FeedsPage(
                         )
                     }
                 }
-            }
-        },
-        bottomBar = {
-            FilterBar(
-                modifier =
-                    with(sharedTransitionScope) {
-                        Modifier.sharedElement(
-                            sharedContentState = rememberSharedContentState("filterBar"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                        )
-                    },
-                filter = filterState.filter,
-                filterBarStyle = filterBarStyle.value,
-                filterBarFilled = true,
-                filterBarPadding = filterBarPadding.dp,
-                filterBarTonalElevation = filterBarTonalElevation.value.dp,
-            ) {
-                feedsViewModel.changeFilter(filterState.copy(filter = it))
             }
         },
     )

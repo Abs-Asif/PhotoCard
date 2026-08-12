@@ -66,11 +66,8 @@ private fun FeedItemImpl(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                FeedIcon(
-                    feedName = feed.name, iconUrl = feed.icon, modifier = Modifier
-                )
                 Text(
-                    modifier = Modifier.padding(start = 12.dp, end = 6.dp),
+                    modifier = Modifier.padding(start = 6.dp, end = 6.dp),
                     text = feed.name,
                     style = MaterialTheme.typography.labelLarge.merge(
                         lineHeight = 20.sp,

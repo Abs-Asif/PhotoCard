@@ -77,9 +77,6 @@ import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.infrastructure.preference.LocalFlowArticleListDateStickyHeader
 import me.ash.reader.infrastructure.preference.LocalFlowArticleListFeedIcon
 import me.ash.reader.infrastructure.preference.LocalFlowArticleListTonalElevation
-import me.ash.reader.infrastructure.preference.LocalFlowFilterBarPadding
-import me.ash.reader.infrastructure.preference.LocalFlowFilterBarStyle
-import me.ash.reader.infrastructure.preference.LocalFlowFilterBarTonalElevation
 import me.ash.reader.infrastructure.preference.LocalFlowTopBarTonalElevation
 import me.ash.reader.infrastructure.preference.LocalMarkAsReadOnScroll
 import me.ash.reader.infrastructure.preference.LocalOpenLink
@@ -89,7 +86,6 @@ import me.ash.reader.infrastructure.preference.LocalSharedContent
 import me.ash.reader.infrastructure.preference.LocalSortUnreadArticles
 import me.ash.reader.infrastructure.preference.PullToLoadNextFeedPreference
 import me.ash.reader.infrastructure.preference.SortUnreadArticlesPreference
-import me.ash.reader.ui.component.FilterBar
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.base.RYExtensibleVisibility
 import me.ash.reader.ui.component.base.RYScaffold
@@ -127,9 +123,6 @@ fun FlowPage(
     val articleListFeedIcon = LocalFlowArticleListFeedIcon.current
     val articleListDateStickyHeader = LocalFlowArticleListDateStickyHeader.current
     val topBarTonalElevation = LocalFlowTopBarTonalElevation.current
-    val filterBarStyle = LocalFlowFilterBarStyle.current
-    val filterBarPadding = LocalFlowFilterBarPadding.current
-    val filterBarTonalElevation = LocalFlowFilterBarTonalElevation.current
     val sharedContent = LocalSharedContent.current
     val markAsReadOnScroll = LocalMarkAsReadOnScroll.current.value
     val context = LocalContext.current
@@ -377,33 +370,6 @@ fun FlowPage(
                             }
                         },
                         actions = {
-                            RYExtensibleVisibility(visible = !filterUiState.filter.isStarred()) {
-                                FeedbackIconButton(
-                                    imageVector = Icons.Rounded.DoneAll,
-                                    contentDescription = stringResource(R.string.mark_all_as_read),
-                                    tint =
-                                        if (markAsRead) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurface
-                                        },
-                                ) {
-                                    if (markAsRead) {
-                                        markAsRead = false
-                                    } else {
-                                        scope
-                                            .launch {
-                                                if (listState.firstVisibleItemIndex != 0) {
-                                                    listState.animateScrollToItem(0)
-                                                }
-                                            }
-                                            .invokeOnCompletion {
-                                                markAsRead = true
-                                                onSearch = false
-                                            }
-                                    }
-                                }
-                            }
                             FeedbackIconButton(
                                 imageVector = Icons.Rounded.Search,
                                 contentDescription = stringResource(R.string.search),
@@ -672,20 +638,11 @@ fun FlowPage(
                                 isShowStickyHeader = articleListDateStickyHeader.value,
                                 articleListTonalElevation = articleListTonalElevation.value,
                                 isSwipeEnabled = { listState.isScrollInProgress },
-                                onClick = { articleWithFeed, index ->
-                                    if (articleWithFeed.feed.isBrowser) {
-                                        viewModel.diffMapHolder.updateDiff(
-                                            articleWithFeed,
-                                            isUnread = false,
-                                        )
-                                        context.openURL(
-                                            articleWithFeed.article.link,
-                                            openLink,
-                                            openLinkSpecificBrowser,
-                                        )
-                                    } else {
-                                        navigateToArticle(articleWithFeed.article.id, index)
-                                    }
+                                onClick = { articleWithFeed, _ ->
+                                    viewModel.diffMapHolder.updateDiff(
+                                        articleWithFeed,
+                                        isUnread = false,
+                                    )
                                 },
                                 onToggleStarred = onToggleStarred,
                                 onToggleRead = onToggleRead,

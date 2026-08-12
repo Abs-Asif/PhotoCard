@@ -154,6 +154,7 @@ interface ArticleDao {
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
+        LIMIT 250
         """
     )
     fun searchArticleByGroupIdWhenAll(
@@ -224,6 +225,7 @@ interface ArticleDao {
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
+        LIMIT 250
         """
     )
     fun searchArticleByFeedIdWhenAll(
@@ -283,6 +285,7 @@ interface ArticleDao {
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
+        LIMIT 250
         """
     )
     fun searchArticleWhenAll(
@@ -482,6 +485,7 @@ interface ArticleDao {
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
+        LIMIT 250
         """
     )
     fun queryArticleWithFeedWhenIsAll(
@@ -533,6 +537,7 @@ interface ArticleDao {
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN a.date END ASC,
             CASE WHEN :sortAscending = 0 THEN a.date END DESC
+        LIMIT 250
         """
     )
     fun queryArticleWithFeedByGroupIdWhenIsAll(
@@ -592,6 +597,7 @@ interface ArticleDao {
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
+        LIMIT 250
         """
     )
     fun queryArticleWithFeedByFeedIdWhenIsAll(
