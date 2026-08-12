@@ -66,6 +66,9 @@ constructor(
                 syndFeed.title = "Sitemap: $domain"
                 syndFeed.link = feedLink
                 syndFeed.entries = listOf()
+                syndFeed.icon = SyndImageImpl()
+                syndFeed.icon.link = queryRssIconLink(feedLink)
+                syndFeed.icon.url = syndFeed.icon.link
                 return@withContext SearchFeedResult(feed = syndFeed, feedLink = feedLink)
             }
 

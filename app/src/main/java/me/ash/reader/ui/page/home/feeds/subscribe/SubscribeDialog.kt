@@ -79,7 +79,7 @@ fun SubscribeDialog(
             },
             icon = {
                 val iconUrl = when (subscribeState) {
-                    is SubscribeState.Configure -> subscribeState.searchedFeed.icon.url
+                    is SubscribeState.Configure -> subscribeState.searchedFeed.icon?.url
                     else -> null
                 }
                 FeedIcon(
