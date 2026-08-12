@@ -19,6 +19,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import me.ash.reader.domain.model.article.Article
 import me.ash.reader.domain.model.feed.Feed
+import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.infrastructure.html.Readability
@@ -44,6 +45,7 @@ constructor(
     @ApplicationContext private val context: Context,
     @IODispatcher private val ioDispatcher: CoroutineDispatcher,
     private val okHttpClient: OkHttpClient,
+    private val articleDao: ArticleDao,
 ) {
 
     data class SearchFeedResult(
@@ -57,6 +59,16 @@ constructor(
             val directResponse = response(okHttpClient, feedLink)
             if (!directResponse.commonIsSuccessful) throw IOException(directResponse.message)
             val directBody = directResponse.body.bytes()
+            val bodyString = String(directBody, Charsets.UTF_8)
+            if (bodyString.contains("<urlset", ignoreCase = true) || bodyString.contains("<sitemapindex", ignoreCase = true)) {
+                val syndFeed = com.rometools.rome.feed.synd.SyndFeedImpl()
+                val domain = feedLink.extractDomain() ?: feedLink
+                syndFeed.title = "Sitemap: $domain"
+                syndFeed.link = feedLink
+                syndFeed.entries = listOf()
+                return@withContext SearchFeedResult(feed = syndFeed, feedLink = feedLink)
+            }
+
             val directHttpContentType = toHttpContentType(directResponse.header("Content-Type"))
 
             val parsedDirectFeed = runCatching { parseFeed(directBody, directHttpContentType) }.getOrNull()
@@ -171,23 +183,68 @@ constructor(
         try {
             val accountId = context.currentAccountId
             val response = response(okHttpClient, feed.url)
-            val contentType = response.header("Content-Type")
+            val bodyBytes = response.body.bytes()
+            val bodyString = String(bodyBytes, Charsets.UTF_8)
 
-            val httpContentType =
-                contentType?.let {
-                    if (it.contains("charset=", ignoreCase = true)) it
-                    else "$it; charset=UTF-8"
-                } ?: "text/xml; charset=UTF-8"
+            if (bodyString.contains("<urlset", ignoreCase = true) || bodyString.contains("<sitemapindex", ignoreCase = true)) {
+                val doc = Jsoup.parse(bodyString, "", org.jsoup.parser.Parser.xmlParser())
+                val locs = doc.select("loc").map { it.text().trim() }.filter { it.isNotEmpty() }
 
-            response.body.byteStream().use { inputStream ->
-                SyndFeedInput()
-                    .apply { isPreserveWireFeed = true }
-                    .build(XmlReader(inputStream, httpContentType))
-                    .entries
-                    .asSequence()
-                    .takeWhile { latestLink == null || latestLink != it.link }
-                    .map { buildArticleFromSyndEntry(feed, accountId, it, preDate) }
-                    .toList()
+                val existingLinks = if (locs.isNotEmpty()) {
+                    locs.chunked(999).flatMap { chunk ->
+                        articleDao.queryArticlesByLinks(chunk, feed.id, feed.accountId).map { it.link }
+                    }.toSet()
+                } else {
+                    emptySet()
+                }
+
+                val newLocs = locs.filterNot { existingLinks.contains(it) }.take(100)
+
+                newLocs.map { url ->
+                    val title = try {
+                        val pageResponse = response(okHttpClient, url)
+                        if (pageResponse.commonIsSuccessful) {
+                            val pageDoc = Jsoup.parse(pageResponse.body.string(), url)
+                            val pageTitle = pageDoc.title().trim()
+                            if (pageTitle.isNotEmpty()) pageTitle else url
+                        } else {
+                            url
+                        }
+                    } catch (e: Exception) {
+                        url
+                    }
+                    Article(
+                        id = accountId.spacerDollar(UUID.randomUUID().toString()),
+                        accountId = accountId,
+                        feedId = feed.id,
+                        date = preDate,
+                        title = title,
+                        author = "",
+                        rawDescription = "",
+                        shortDescription = "",
+                        img = null,
+                        link = url,
+                        updateAt = preDate,
+                    )
+                }
+            } else {
+                val contentType = response.header("Content-Type")
+                val httpContentType =
+                    contentType?.let {
+                        if (it.contains("charset=", ignoreCase = true)) it
+                        else "$it; charset=UTF-8"
+                    } ?: "text/xml; charset=UTF-8"
+
+                ByteArrayInputStream(bodyBytes).use { inputStream ->
+                    SyndFeedInput()
+                        .apply { isPreserveWireFeed = true }
+                        .build(XmlReader(inputStream, httpContentType))
+                        .entries
+                        .asSequence()
+                        .takeWhile { latestLink == null || latestLink != it.link }
+                        .map { buildArticleFromSyndEntry(feed, accountId, it, preDate) }
+                        .toList()
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()

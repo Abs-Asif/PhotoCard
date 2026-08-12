@@ -140,19 +140,7 @@ fun ArticleItem(
                 .clip(Shape20)
                 .combinedClickable(onClick = onClick, onLongClick = onLongClick)
                 .padding(horizontal = 12.dp, vertical = 12.dp)
-                .alpha(
-                    when (articleListReadIndicator) {
-                        FlowArticleReadIndicatorPreference.None -> 1f
-
-                        FlowArticleReadIndicatorPreference.AllRead -> {
-                            if (isUnread) 1f else 0.5f
-                        }
-
-                        FlowArticleReadIndicatorPreference.ExcludingStarred -> {
-                            if (isUnread || isStarred) 1f else 0.5f
-                        }
-                    }
-                )
+                .alpha(if (isUnread) 1f else 0.4f)
     ) {
         // Top
         Row(

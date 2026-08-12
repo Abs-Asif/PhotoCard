@@ -37,9 +37,6 @@ object RouteName {
     // Languages
     const val LANGUAGES = "languages"
 
-    // Troubleshooting
-    const val TROUBLESHOOTING = "troubleshooting"
-
     // Tips & Support
     const val TIPS_AND_SUPPORT = "tips_and_support"
     const val LICENSE_LIST = "license_list"

@@ -51,7 +51,6 @@ fun SettingsPage(
     navigateToColorAndStyle: () -> Unit,
     navigateToInteraction: () -> Unit,
     navigateToLanguages: () -> Unit,
-    navigateToTroubleshooting: () -> Unit,
     navigateToTipsAndSupport: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -109,14 +108,6 @@ fun SettingsPage(
                         desc = stringResource(R.string.interaction_desc),
                         icon = Icons.Outlined.TouchApp,
                         onClick = navigateToInteraction
-                    )
-                }
-                item {
-                    SelectableSettingGroupItem(
-                        title = stringResource(R.string.troubleshooting),
-                        desc = stringResource(R.string.troubleshooting_desc),
-                        icon = Icons.Outlined.BugReport,
-                        onClick = navigateToTroubleshooting
                     )
                 }
                 item {
