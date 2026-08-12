@@ -51,14 +51,6 @@ fun SubscribeDialog(
     val subscribeUiState = subscribeViewModel.subscribeUiState.collectAsStateValue()
     val subscribeState = subscribeViewModel.subscribeState.collectAsStateValue()
 
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-        it?.let { uri ->
-            context.contentResolver.openInputStream(uri)?.let { inputStream ->
-                subscribeViewModel.importFromInputStream(inputStream)
-            }
-        }
-    }
-
     if (subscribeState is SubscribeState.Visible) {
 
         DisposableEffect(Unit) {
@@ -134,28 +126,10 @@ fun SubscribeDialog(
                         }
 
                         is SubscribeState.Configure -> {
-                            FeedOptionView(
-                                link = state.feedLink,
-                                groups = state.groups,
-                                selectedAllowNotificationPreset = state.notification,
-                                selectedParseFullContentPreset = state.fullContent,
-                                selectedOpenInBrowserPreset = state.browser,
-                                selectedGroupId = state.selectedGroupId,
-                                allowNotificationPresetOnClick = {
-                                    subscribeViewModel.toggleAllowNotificationPreset()
-                                },
-                                parseFullContentPresetOnClick = {
-                                    subscribeViewModel.toggleParseFullContentPreset()
-                                },
-                                openInBrowserPresetOnClick = {
-                                    subscribeViewModel.toggleOpenInBrowserPreset()
-                                },
-                                onGroupClick = {
-                                    subscribeViewModel.selectedGroup(it)
-                                },
-                                onAddNewGroup = {
-                                    subscribeViewModel.showNewGroupDialog()
-                                },
+                            Text(
+                                text = state.feedLink,
+                                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(vertical = 8.dp)
                             )
                         }
 
@@ -194,25 +168,13 @@ fun SubscribeDialog(
                 }
             },
             dismissButton = {
-                if (subscribeState is SubscribeState.Idle && subscribeState.importFromOpmlEnabled) {
-                    TextButton(
-                        onClick = {
-                            focusManager.clearFocus()
-                            launcher.launch(arrayOf(MimeType.ANY))
-                            subscribeViewModel.hideDrawer()
-                        }
-                    ) {
-                        Text(text = stringResource(R.string.import_from_opml))
+                TextButton(
+                    onClick = {
+                        focusManager.clearFocus()
+                        subscribeViewModel.hideDrawer()
                     }
-                } else {
-                    TextButton(
-                        onClick = {
-                            focusManager.clearFocus()
-                            subscribeViewModel.hideDrawer()
-                        }
-                    ) {
-                        Text(text = stringResource(R.string.cancel))
-                    }
+                ) {
+                    Text(text = stringResource(R.string.cancel))
                 }
             },
         )

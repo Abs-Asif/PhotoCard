@@ -25,6 +25,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Balance
+import androidx.compose.material.icons.rounded.Call
+import androidx.compose.material.icons.rounded.Chat
+import androidx.compose.material.icons.rounded.Email
+import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.TipsAndUpdates
 import androidx.compose.material.icons.rounded.VolunteerActivism
 import androidx.compose.material3.Badge
@@ -38,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedButton
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
@@ -252,40 +257,30 @@ fun TipsAndSupportPage(
                             .padding(horizontal = 24.dp)
                     ) {
                         listOf(
-                            Triple("Facebook", "https://www.facebook.com/abdullahbariasif", "https://www.facebook.com/abdullahbariasif"),
-                            Triple("WhatsApp", "01538310838", "https://api.whatsapp.com/send?phone=8801538310838"),
-                            Triple("Call", "+8801738745285", "tel:+8801738745285"),
-                            Triple("Email", "abdullah.bari.2026@gmail.com", "mailto:abdullah.bari.2026@gmail.com")
-                        ).forEach { (title, display, uriString) ->
-                            Card(
+                            Triple("Facebook", "https://www.facebook.com/abdullahbariasif", Icons.Rounded.Public to "https://www.facebook.com/abdullahbariasif"),
+                            Triple("WhatsApp", "01538310838", Icons.Rounded.Chat to "https://api.whatsapp.com/send?phone=8801538310838"),
+                            Triple("Call", "+8801738745285", Icons.Rounded.Call to "tel:+8801738745285"),
+                            Triple("Email", "abdullah.bari.2026@gmail.com", Icons.Rounded.Email to "mailto:abdullah.bari.2026@gmail.com")
+                        ).forEach { (title, display, pair) ->
+                            val (icon, uriString) = pair
+                            OutlinedButton(
+                                onClick = {
+                                    runCatching {
+                                        val action = if (uriString.startsWith("tel:")) Intent.ACTION_DIAL else if (uriString.startsWith("mailto:")) Intent.ACTION_SENDTO else Intent.ACTION_VIEW
+                                        context.startActivity(Intent(action, Uri.parse(uriString)))
+                                    }
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 8.dp)
-                                    .clickable {
-                                        runCatching {
-                                            val action = if (uriString.startsWith("tel:")) Intent.ACTION_DIAL else if (uriString.startsWith("mailto:")) Intent.ACTION_SENDTO else Intent.ACTION_VIEW
-                                            context.startActivity(Intent(action, Uri.parse(uriString)))
-                                        }
-                                    },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                )
+                                    .padding(vertical = 4.dp)
                             ) {
-                                Column(
-                                    modifier = Modifier.padding(16.dp)
-                                ) {
-                                    Text(
-                                        text = title,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = display,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(text = "$title: $display")
                             }
                         }
                     }

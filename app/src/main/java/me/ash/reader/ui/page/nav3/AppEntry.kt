@@ -26,13 +26,11 @@ import androidx.navigation3.ui.NavDisplay
 import kotlinx.coroutines.delay
 import me.ash.reader.ui.motion.materialSharedAxisXIn
 import me.ash.reader.ui.motion.materialSharedAxisXOut
-import me.ash.reader.ui.page.adaptive.ArticleData
-import me.ash.reader.ui.page.adaptive.ArticleListReaderPage
 import me.ash.reader.ui.page.adaptive.ArticleListReaderViewModel
 import me.ash.reader.ui.page.home.feeds.FeedsPage
 import me.ash.reader.ui.page.home.feeds.subscribe.SubscribeViewModel
+import me.ash.reader.ui.page.home.flow.FlowPage
 import me.ash.reader.ui.page.nav3.key.Route
-import me.ash.reader.ui.page.settings.SettingsPage
 import me.ash.reader.ui.page.settings.accounts.AccountDetailsPage
 import me.ash.reader.ui.page.settings.accounts.AccountViewModel
 import me.ash.reader.ui.page.settings.accounts.AccountsPage
@@ -47,7 +45,6 @@ import me.ash.reader.ui.page.settings.color.reading.ReadingStylePage
 import me.ash.reader.ui.page.settings.color.reading.ReadingTextPage
 import me.ash.reader.ui.page.settings.color.reading.ReadingTitlePage
 import me.ash.reader.ui.page.settings.color.reading.ReadingVideoPage
-import me.ash.reader.ui.page.settings.interaction.InteractionPage
 import me.ash.reader.ui.page.settings.languages.LanguagesPage
 import me.ash.reader.ui.page.settings.tips.LicenseListPage
 import me.ash.reader.ui.page.settings.tips.TipsAndSupportPage
@@ -67,14 +64,6 @@ fun AppEntry(backStack: NavBackStack<NavKey>) {
     val onBack: () -> Unit = {
         if (backStack.size == 1) backStack[0] = Route.Feeds else backStack.removeLastOrNull()
     }
-
-    val scaffoldDirective = calculatePaneScaffoldDirective(currentWindowAdaptiveInfo())
-
-    val navigator =
-        rememberListDetailPaneScaffoldNavigator<ArticleData>(
-            scaffoldDirective = scaffoldDirective,
-            isDestinationHistoryAware = false,
-        )
 
     SharedTransitionLayout {
         NavDisplay(
@@ -114,8 +103,8 @@ fun AppEntry(backStack: NavBackStack<NavKey>) {
                                 subscribeViewModel = subscribeViewModel,
                                 sharedTransitionScope = this@SharedTransitionLayout,
                                 animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                navigateToSettings = { backStack.add(Route.Settings) },
-                                navigationToFlow = { backStack.add(Route.Reading(null)) },
+                                navigateToSettings = { backStack.add(Route.TipsAndSupport) },
+                                navigationToFlow = { backStack.add(Route.Flow) },
                                 navigateToAccountList = { backStack.add(Route.Accounts) },
                                 navigateToAccountDetail = {
                                     backStack.add(Route.AccountDetails(it))
@@ -123,69 +112,24 @@ fun AppEntry(backStack: NavBackStack<NavKey>) {
                             )
                         }
                     }
-                    is Route.Reading -> {
+                    Route.Flow -> {
                         NavEntry(key) {
-                            val key = rememberSaveable(saver = Route.Reading.Saver) { key }
-
-                            LaunchedEffect(key) {
-                                if (key.articleId != null) {
-                                    delay(50L)
-                                    navigator.navigateTo(
-                                        ListDetailPaneScaffoldRole.Detail,
-                                        ArticleData(key.articleId),
-                                    )
-                                }
-                            }
-
                             val viewModel = hiltViewModel<ArticleListReaderViewModel>()
-
-                            ArticleListReaderPage(
-                                scaffoldDirective = scaffoldDirective,
-                                navigator = navigator,
+                            FlowPage(
                                 sharedTransitionScope = this@SharedTransitionLayout,
                                 animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                 viewModel = viewModel,
-                                onBack = onBack,
-                                onNavigateToStylePage = { backStack.add(Route.ReadingPageStyle) },
+                                onNavigateUp = onBack,
+                                isTwoPane = false,
+                                navigateToArticle = { _: String, _: Int -> }
                             )
                         }
                     }
-                    //                    is Route.Reading -> {
-                    //                        NavEntry(key) {
-                    //                            val articleId = key.articleId
-                    //
-                    //                            val readingViewModel: ReadingViewModel =
-                    //                                hiltViewModel<
-                    //                                    ReadingViewModel,
-                    //                                    ReadingViewModel.ReadingViewModelFactory,
-                    //                                > { factory ->
-                    //                                    factory.create(articleId.toString(), null)
-                    //                                }
-                    //
-                    //                            ReadingPage(
-                    //                                readingViewModel = readingViewModel,
-                    //                                onBack = onBack,
-                    //                                onNavigateToStylePage = {
-                    // backStack.add(Route.ReadingPageStyle) },
-                    //                            )
-                    //                        }
-                    //                    }
                     Route.Startup -> {
                         NavEntry(key) {
                             StartupPage(onNavigateToFeeds = { backStack.add(Route.Feeds) })
                         }
                     }
-                    Route.Settings ->
-                        NavEntry(key) {
-                            SettingsPage(
-                                onBack = onBack,
-                                navigateToAccounts = { backStack.add(Route.Accounts) },
-                                navigateToColorAndStyle = { backStack.add(Route.ColorAndStyle) },
-                                navigateToInteraction = { backStack.add(Route.Interaction) },
-                                navigateToLanguages = { backStack.add(Route.Languages) },
-                                navigateToTipsAndSupport = { backStack.add(Route.TipsAndSupport) },
-                            )
-                        }
                     Route.Accounts ->
                         NavEntry(key) {
                             AccountsPage(
@@ -258,7 +202,6 @@ fun AppEntry(backStack: NavBackStack<NavKey>) {
                     Route.ReadingPageText -> NavEntry(key) { ReadingTextPage(onBack = onBack) }
                     Route.ReadingPageImage -> NavEntry(key) { ReadingImagePage(onBack = onBack) }
                     Route.ReadingPageVideo -> NavEntry(key) { ReadingVideoPage(onBack = onBack) }
-                    Route.Interaction -> NavEntry(key) { InteractionPage(onBack = onBack) }
                     Route.Languages -> NavEntry(key) { LanguagesPage(onBack = onBack) }
                     Route.TipsAndSupport ->
                         NavEntry(key) {

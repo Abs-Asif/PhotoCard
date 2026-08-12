@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity() {
                                             )
                                             listOf(
                                                 Route.Feeds,
-                                                Route.Reading(launchAction.articleId),
+                                                Route.Flow,
                                             )
                                         }
                                         is LaunchAction.Subscribe -> {
@@ -130,7 +130,7 @@ class MainActivity : AppCompatActivity() {
                                             if (
                                                 initialPage == InitialPagePreference.FlowPage.value
                                             ) {
-                                                listOf(Route.Feeds, Route.Reading(null))
+                                                listOf(Route.Feeds, Route.Flow)
                                             } else listOf(Route.Feeds)
                                         }
                                     }
@@ -161,7 +161,7 @@ class MainActivity : AppCompatActivity() {
                             is LaunchAction.OpenArticle -> {
                                 val (articleId, feedId, groupId) = action
                                 filterUseCase.init(feedId, groupId)
-                                val readingIndex = backStack.indexOfFirst { it is Route.Reading }
+                                val readingIndex = backStack.indexOfFirst { it is Route.Flow }
                                 if (readingIndex != -1) {
                                     repeat(backStack.size - readingIndex) {
                                         backStack.removeLastOrNull()
@@ -169,7 +169,7 @@ class MainActivity : AppCompatActivity() {
                                 }
                                 scope.launch {
                                     delay(500L)
-                                    backStack.add(Reading(articleId = articleId))
+                                    backStack.add(Route.Flow)
                                 }
                             }
 
@@ -181,13 +181,13 @@ class MainActivity : AppCompatActivity() {
                                 )
                                     return@Consumer
                                 filterUseCase.init(feedId, groupId)
-                                val readingIndex = backStack.indexOfFirst { it is Reading }
+                                val readingIndex = backStack.indexOfFirst { it is Route.Flow }
                                 if (readingIndex != -1) {
                                     repeat(backStack.size - readingIndex) {
                                         backStack.removeLastOrNull()
                                     }
                                 }
-                                backStack.add(Reading(articleId = null))
+                                backStack.add(Route.Flow)
                             }
 
                             is LaunchAction.Subscribe -> {
