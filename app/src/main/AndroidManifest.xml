@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
@@ -131,18 +132,6 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/article_list_widget_info" />
-        </receiver>
-        <receiver
-            android:name=".ui.widget.ArticleCardWidgetReceiver"
-            android:label="@string/card_widget_label"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/article_card_widget_info" />
         </receiver>
     </application>
 

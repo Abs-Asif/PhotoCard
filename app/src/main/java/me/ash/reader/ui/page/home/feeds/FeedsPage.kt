@@ -236,7 +236,7 @@ fun FeedsPage(
                     item {
                         FeedsBanner(
                             filter = filterState.filter,
-                            desc = importantSum.ifEmpty { stringResource(R.string.loading) },
+                            desc = null,
                         ) {
                             feedsViewModel.changeFilter(filterState.copy(group = null, feed = null))
                             navigationToFlow()

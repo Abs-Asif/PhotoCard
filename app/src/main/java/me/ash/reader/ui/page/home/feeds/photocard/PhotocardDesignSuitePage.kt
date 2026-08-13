@@ -71,6 +71,9 @@ fun PhotocardDesignSuitePage(
     var sourceType by remember { mutableStateOf("rss") } // "rss" or "sitemap"
     var sourceCheckStatus by remember { mutableStateOf("Not checked") }
 
+    // Zip File Name
+    var zipFileName by remember { mutableStateOf("photocard_design_export") }
+
     // Design parameters
     var bgWidth by remember { mutableStateOf(1000) }
     var bgHeight by remember { mutableStateOf(1000) }
@@ -107,7 +110,30 @@ fun PhotocardDesignSuitePage(
 
     // Asset Picked states
     var bgImageFile by remember { mutableStateOf<File?>(null) }
-    var fontFile by remember { mutableStateOf<File?>(null) }
+    var fontFiles by remember { mutableStateOf<List<File>>(emptyList()) }
+    var selectedTitleFont by remember { mutableStateOf<File?>(null) }
+    var selectedDateFont by remember { mutableStateOf<File?>(null) }
+
+    // Dynamically build Typefaces for compose preview
+    val titleFontFamilyCompose = remember(selectedTitleFont) {
+        selectedTitleFont?.let { file ->
+            try {
+                FontFamily(Typeface.createFromFile(file))
+            } catch (e: Exception) {
+                FontFamily.Default
+            }
+        } ?: FontFamily.Default
+    }
+
+    val dateFontFamilyCompose = remember(selectedDateFont) {
+        selectedDateFont?.let { file ->
+            try {
+                FontFamily(Typeface.createFromFile(file))
+            } catch (e: Exception) {
+                FontFamily.Default
+            }
+        } ?: FontFamily.Default
+    }
 
     // Mocks / Prefill
     val mockTitle = if (key.prefillTitle.isNotEmpty()) key.prefillTitle else "পরিকল্পনা অনুযায়ী ফটোকর্ড ডিজাইন সোর্সিং ফিচার বাস্তবায়ন"
@@ -131,16 +157,48 @@ fun PhotocardDesignSuitePage(
         }
     }
 
-    val fontPicker = rememberLauncherForActivityResult(
+    val fontsPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            val added = mutableListOf<File>()
+            uris.forEach { uri ->
+                val file = uri.toTempFile(context, "photocard_font_", ".ttf")
+                if (file != null) {
+                    added.add(file)
+                }
+            }
+            if (added.isNotEmpty()) {
+                fontFiles = fontFiles + added
+                if (selectedTitleFont == null) {
+                    selectedTitleFont = added.first()
+                    titleFontFamily = added.first().name
+                }
+                if (selectedDateFont == null) {
+                    selectedDateFont = added.first()
+                    dateFontFamily = added.first().name
+                }
+                Toast.makeText(context, "Added ${added.size} font file(s)!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val singleFontPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         if (uri != null) {
             val file = uri.toTempFile(context, "photocard_font_", ".ttf")
             if (file != null) {
-                fontFile = file
-                titleFontFamily = file.name
-                dateFontFamily = file.name
-                Toast.makeText(context, "Font file selected!", Toast.LENGTH_SHORT).show()
+                fontFiles = fontFiles + file
+                if (selectedTitleFont == null) {
+                    selectedTitleFont = file
+                    titleFontFamily = file.name
+                }
+                if (selectedDateFont == null) {
+                    selectedDateFont = file
+                    dateFontFamily = file.name
+                }
+                Toast.makeText(context, "Font added: ${file.name}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -182,6 +240,10 @@ fun PhotocardDesignSuitePage(
                                     Toast.makeText(context, "Please select a background image first!", Toast.LENGTH_LONG).show()
                                     return@IconButton
                                 }
+                                if (zipFileName.trim().isEmpty()) {
+                                    Toast.makeText(context, "Please enter a valid ZIP file name!", Toast.LENGTH_SHORT).show()
+                                    return@IconButton
+                                }
                                 isSavingZip = true
                                 scope.launch {
                                     val config = PhotocardConfig(
@@ -207,8 +269,20 @@ fun PhotocardDesignSuitePage(
                                     val replaceMap = replacementsList.toMap()
                                     val replaceJsonStr = PhotocardManager.serializeReplaceJson(replaceMap)
 
-                                    val exportsDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-                                    val exportFile = File(exportsDir, "photocard_design_export.zip")
+                                    val nameToUse = if (zipFileName.endsWith(".zip")) zipFileName.trim() else "${zipFileName.trim()}.zip"
+
+                                    // Robust location resolving
+                                    val sdcardDownload = File("/sdcard/download")
+                                    val defaultPublicDownload = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                                    val targetFolder = if (sdcardDownload.exists() || sdcardDownload.mkdirs()) {
+                                        sdcardDownload
+                                    } else if (defaultPublicDownload.exists() || defaultPublicDownload.mkdirs()) {
+                                        defaultPublicDownload
+                                    } else {
+                                        context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir
+                                    }
+
+                                    val exportFile = File(targetFolder, nameToUse)
 
                                     try {
                                         PhotocardManager.writeZip(
@@ -216,9 +290,9 @@ fun PhotocardDesignSuitePage(
                                             cardJsonStr = cardJsonStr,
                                             replaceJsonStr = replaceJsonStr,
                                             backgroundImageFile = bgImageFile,
-                                            fontFiles = listOfNotNull(fontFile)
+                                            fontFiles = fontFiles
                                         )
-                                        Toast.makeText(context, "Successfully exported design to Downloads/photocard_design_export.zip!", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Successfully saved to ${exportFile.absolutePath}!", Toast.LENGTH_LONG).show()
                                     } catch (e: Exception) {
                                         e.printStackTrace()
                                         Toast.makeText(context, "Failed to save ZIP: ${e.message}", Toast.LENGTH_LONG).show()
@@ -243,19 +317,27 @@ fun PhotocardDesignSuitePage(
             ) {
                 // Section 1: Visual Interactive Canvas (covers 1:1 preview with visual drag and drop!)
                 item {
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Visual Canvas Preview (Drag to position elements)",
+                        text = "Visual Canvas Preview",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 8.dp)
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Text(
+                        text = "Drag the blocks to visually align elements in real time.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
 
                     BoxWithConstraints(
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF121212))
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0xFF1E2640))
+                            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
                     ) {
                         val canvasWidth = maxWidth
                         val canvasHeight = maxHeight
@@ -340,6 +422,7 @@ fun PhotocardDesignSuitePage(
                                 text = mockTitle,
                                 color = try { Color(android.graphics.Color.parseColor(titleColor)) } catch (e: Exception) { Color.White },
                                 fontSize = (titleSize * scaleX).sp,
+                                fontFamily = titleFontFamilyCompose,
                                 textAlign = when (titleAlignment.lowercase()) {
                                     "center" -> TextAlign.Center
                                     "right" -> TextAlign.Right
@@ -369,7 +452,8 @@ fun PhotocardDesignSuitePage(
                             Text(
                                 text = PhotocardDateHelper.formatDate(Date(mockDateTimestamp), dateFormatSelected),
                                 color = try { Color(android.graphics.Color.parseColor(dateColor)) } catch (e: Exception) { Color.LightGray },
-                                fontSize = (dateSize * scaleX).sp
+                                fontSize = (dateSize * scaleX).sp,
+                                fontFamily = dateFontFamilyCompose
                             )
                         }
 
@@ -387,304 +471,491 @@ fun PhotocardDesignSuitePage(
                     }
                 }
 
-                // Section 2: Essential Asset Selectors
+                // Section 2: Destination & Verification Setup
                 item {
-                    Text(text = "Assets Selection", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = { bgImagePicker.launch("image/*") },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(imageVector = Icons.Rounded.Image, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = if (bgImageFile != null) "Change BG" else "Choose BG")
-                        }
-
-                        Button(
-                            onClick = { fontPicker.launch("*/*") },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(imageVector = Icons.Rounded.FontDownload, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = if (fontFile != null) "Change Font" else "Choose Font")
-                        }
-                    }
-
-                    if (bgImageFile != null) {
-                        Text(
-                            text = "BG file: ${bgImageFile!!.name}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                    if (fontFile != null) {
-                        Text(
-                            text = "Font file: ${fontFile!!.name}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                }
-
-                // Section 3: Source Verification Check
-                item {
-                    Text(text = "Source Rules Configuration", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = sourceUrl,
-                        onValueChange = { sourceUrl = it },
-                        label = { Text("Source RSS/Sitemap URL") },
-                        placeholder = { Text("https://example.com/rss") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
+                    ElevatedCard(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text(
-                            text = "Detected source: $sourceType",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        if (isCheckingSource) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                        } else {
-                            Text(
-                                text = sourceCheckStatus,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(text = "ZIP File Configuration", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            OutlinedTextField(
+                                value = zipFileName,
+                                onValueChange = { zipFileName = it },
+                                label = { Text("ZIP Export File Name") },
+                                placeholder = { Text("photocard_design_export") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
                             )
-                        }
-                    }
-                }
 
-                // Section 4: Design Rules Tuning (Coordinate sliders and options)
-                item {
-                    Text(text = "Layout Tuning Controls", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                    // Layer position priority Z-index
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(text = "Photocard Image Placement priority:")
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(
-                                selected = imgZIndex == "above_background",
-                                onClick = { imgZIndex = "above_background" }
+                            OutlinedTextField(
+                                value = sourceUrl,
+                                onValueChange = { sourceUrl = it },
+                                label = { Text("Source RSS/Sitemap URL") },
+                                placeholder = { Text("https://example.com/rss") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            Text(text = "Above BG")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            RadioButton(
-                                selected = imgZIndex == "below_background",
-                                onClick = { imgZIndex = "below_background" }
-                            )
-                            Text(text = "Below BG")
-                        }
-                    }
 
-                    Divider(modifier = Modifier.padding(vertical = 12.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                    // Sliders for Photocard Image dimensions
-                    Text(text = "Photocard image Corner Radius: ${imgCornerRadius.roundToInt()} px")
-                    Slider(
-                        value = imgCornerRadius,
-                        onValueChange = { imgCornerRadius = it },
-                        valueRange = 0f..100f
-                    )
-
-                    Text(text = "Photocard image width: ${imgW.roundToInt()} px")
-                    Slider(
-                        value = imgW,
-                        onValueChange = { imgW = it },
-                        valueRange = 100f..1000f
-                    )
-
-                    Text(text = "Photocard image height: ${imgH.roundToInt()} px")
-                    Slider(
-                        value = imgH,
-                        onValueChange = { imgH = it },
-                        valueRange = 100f..1000f
-                    )
-
-                    Divider(modifier = Modifier.padding(vertical = 12.dp))
-
-                    // Title configs
-                    Text(text = "Title Text size: ${titleSize.roundToInt()} px")
-                    Slider(
-                        value = titleSize,
-                        onValueChange = { titleSize = it },
-                        valueRange = 12f..100f
-                    )
-
-                    Text(text = "Title max bounding width: ${titleW.roundToInt()} px")
-                    Slider(
-                        value = titleW,
-                        onValueChange = { titleW = it },
-                        valueRange = 100f..1000f
-                    )
-
-                    OutlinedTextField(
-                        value = titleColor,
-                        onValueChange = { titleColor = it },
-                        label = { Text("Title Text Color (HEX string)") },
-                        placeholder = { Text("#FFFFFF") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(text = "Title text alignment:")
-                        Row {
-                            listOf("left", "center", "right").forEach { align ->
-                                FilterChip(
-                                    selected = titleAlignment == align,
-                                    onClick = { titleAlignment = align },
-                                    label = { Text(align) },
-                                    modifier = Modifier.padding(horizontal = 2.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    Divider(modifier = Modifier.padding(vertical = 12.dp))
-
-                    // Date config
-                    Text(text = "Date Text size: ${dateSize.roundToInt()} px")
-                    Slider(
-                        value = dateSize,
-                        onValueChange = { dateSize = it },
-                        valueRange = 12f..100f
-                    )
-
-                    OutlinedTextField(
-                        value = dateColor,
-                        onValueChange = { dateColor = it },
-                        label = { Text("Date Text Color (HEX string)") },
-                        placeholder = { Text("#CCCCCC") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Date Format drop downs list
-                    Text(text = "Date Format Representation:", fontWeight = FontWeight.Bold)
-                    Column(modifier = Modifier.padding(top = 4.dp)) {
-                        PhotocardDateHelper.FORMATS.forEach { fmt ->
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { dateFormatSelected = fmt }
-                                    .padding(vertical = 8.dp, horizontal = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                RadioButton(
-                                    selected = dateFormatSelected == fmt,
-                                    onClick = { dateFormatSelected = fmt }
+                                Text(
+                                    text = "Source: $sourceType",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = fmt, fontSize = 13.sp)
-                            }
-                        }
-                    }
-
-                    Divider(modifier = Modifier.padding(vertical = 12.dp))
-
-                    // Card Border
-                    Text(text = "Card Border thickness: ${borderThickness.roundToInt()} px")
-                    Slider(
-                        value = borderThickness,
-                        onValueChange = { borderThickness = it },
-                        valueRange = 0f..50f
-                    )
-
-                    OutlinedTextField(
-                        value = borderColor,
-                        onValueChange = { borderColor = it },
-                        label = { Text("Card Border Color (HEX)") },
-                        placeholder = { Text("#000000") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                // Section 5: Word replacement editor (text moderation replace.json)
-                item {
-                    Text(text = "Compliance Word Moderation (replace.json)", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = newBadWord,
-                            onValueChange = { newBadWord = it },
-                            label = { Text("Word") },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = newGoodWord,
-                            onValueChange = { newGoodWord = it },
-                            label = { Text("Moderate") },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(
-                            onClick = {
-                                if (newBadWord.trim().isNotEmpty() && newGoodWord.trim().isNotEmpty()) {
-                                    replacementsList = replacementsList + (newBadWord.trim() to newGoodWord.trim())
-                                    newBadWord = ""
-                                    newGoodWord = ""
+                                if (isCheckingSource) {
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                                } else {
+                                    Text(
+                                        text = sourceCheckStatus,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
-                        ) {
-                            Icon(imageVector = Icons.Rounded.Add, contentDescription = "Add")
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                items(replacementsList) { (bad, good) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-                            .padding(8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                // Section 3: Essential Asset Selectors Card
+                item {
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text(text = "$bad  →  $good", style = MaterialTheme.typography.bodyMedium)
-                        IconButton(
-                            onClick = {
-                                replacementsList = replacementsList.filter { it.first != bad }
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(text = "Asset Files Selection", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = { bgImagePicker.launch("image/*") },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(imageVector = Icons.Rounded.Image, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = if (bgImageFile != null) "Change BG" else "Choose BG")
+                                }
+
+                                Button(
+                                    onClick = { fontsPicker.launch("*/*") },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(imageVector = Icons.Rounded.FontDownload, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = "Add Fonts")
+                                }
                             }
+
+                            if (bgImageFile != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Image,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "BG: ${bgImageFile!!.name}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(
+                                        onClick = { bgImageFile = null },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Delete,
+                                            contentDescription = "Remove",
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (fontFiles.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "Selected Fonts (${fontFiles.size}):",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                fontFiles.forEach { file ->
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 2.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.FontDownload,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.secondary,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = file.name,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.weight(1f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        IconButton(
+                                            onClick = {
+                                                if (selectedTitleFont == file) {
+                                                    selectedTitleFont = null
+                                                    titleFontFamily = ""
+                                                }
+                                                if (selectedDateFont == file) {
+                                                    selectedDateFont = null
+                                                    dateFontFamily = ""
+                                                }
+                                                fontFiles = fontFiles - file
+                                            },
+                                            modifier = Modifier.size(24.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Delete,
+                                                contentDescription = "Remove",
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "No font files added yet.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Section 4: Font Assignments Card
+                if (fontFiles.isNotEmpty()) {
+                    item {
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Delete,
-                                contentDescription = "Remove",
-                                tint = MaterialTheme.colorScheme.error
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(text = "Assign Fonts", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Text(text = "Title Font:", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                    fontFiles.forEach { file ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    selectedTitleFont = file
+                                                    titleFontFamily = file.name
+                                                }
+                                                .padding(vertical = 4.dp)
+                                        ) {
+                                            RadioButton(
+                                                selected = selectedTitleFont == file,
+                                                onClick = {
+                                                    selectedTitleFont = file
+                                                    titleFontFamily = file.name
+                                                }
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(text = file.name, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    }
+                                }
+
+                                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                                Text(text = "Date Font:", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                    fontFiles.forEach { file ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    selectedDateFont = file
+                                                    dateFontFamily = file.name
+                                                }
+                                                .padding(vertical = 4.dp)
+                                        ) {
+                                            RadioButton(
+                                                selected = selectedDateFont == file,
+                                                onClick = {
+                                                    selectedDateFont = file
+                                                    dateFontFamily = file.name
+                                                }
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(text = file.name, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Section 5: Layout Tuning Controls Card
+                item {
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(text = "Layout Tuning Controls", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Layer position priority Z-index
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = "Image Placement:")
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(
+                                        selected = imgZIndex == "above_background",
+                                        onClick = { imgZIndex = "above_background" }
+                                    )
+                                    Text(text = "Above BG")
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    RadioButton(
+                                        selected = imgZIndex == "below_background",
+                                        onClick = { imgZIndex = "below_background" }
+                                    )
+                                    Text(text = "Below BG")
+                                }
+                            }
+
+                            Divider(modifier = Modifier.padding(vertical = 12.dp))
+
+                            // Sliders for Photocard Image dimensions
+                            Text(text = "Image Corner Radius: ${imgCornerRadius.roundToInt()} px")
+                            Slider(
+                                value = imgCornerRadius,
+                                onValueChange = { imgCornerRadius = it },
+                                valueRange = 0f..100f
                             )
+
+                            Text(text = "Image width: ${imgW.roundToInt()} px")
+                            Slider(
+                                value = imgW,
+                                onValueChange = { imgW = it },
+                                valueRange = 100f..1000f
+                            )
+
+                            Text(text = "Image height: ${imgH.roundToInt()} px")
+                            Slider(
+                                value = imgH,
+                                onValueChange = { imgH = it },
+                                valueRange = 100f..1000f
+                            )
+
+                            Divider(modifier = Modifier.padding(vertical = 12.dp))
+
+                            // Title configs
+                            Text(text = "Title Text size: ${titleSize.roundToInt()} px")
+                            Slider(
+                                value = titleSize,
+                                onValueChange = { titleSize = it },
+                                valueRange = 12f..100f
+                            )
+
+                            Text(text = "Title max bounding width: ${titleW.roundToInt()} px")
+                            Slider(
+                                value = titleW,
+                                onValueChange = { titleW = it },
+                                valueRange = 100f..1000f
+                            )
+
+                            OutlinedTextField(
+                                value = titleColor,
+                                onValueChange = { titleColor = it },
+                                label = { Text("Title Text Color (HEX)") },
+                                placeholder = { Text("#FFFFFF") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = "Title alignment:")
+                                Row {
+                                    listOf("left", "center", "right").forEach { align ->
+                                        FilterChip(
+                                            selected = titleAlignment == align,
+                                            onClick = { titleAlignment = align },
+                                            label = { Text(align) },
+                                            modifier = Modifier.padding(horizontal = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Divider(modifier = Modifier.padding(vertical = 12.dp))
+
+                            // Date config
+                            Text(text = "Date Text size: ${dateSize.roundToInt()} px")
+                            Slider(
+                                value = dateSize,
+                                onValueChange = { dateSize = it },
+                                valueRange = 12f..100f
+                            )
+
+                            OutlinedTextField(
+                                value = dateColor,
+                                onValueChange = { dateColor = it },
+                                label = { Text("Date Text Color (HEX)") },
+                                placeholder = { Text("#CCCCCC") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Date Format dropdowns list
+                            Text(text = "Date Format Representation:", fontWeight = FontWeight.Bold)
+                            Column(modifier = Modifier.padding(top = 4.dp)) {
+                                PhotocardDateHelper.FORMATS.forEach { fmt ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { dateFormatSelected = fmt }
+                                            .padding(vertical = 4.dp, horizontal = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(
+                                            selected = dateFormatSelected == fmt,
+                                            onClick = { dateFormatSelected = fmt }
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(text = fmt, fontSize = 13.sp)
+                                    }
+                                }
+                            }
+
+                            Divider(modifier = Modifier.padding(vertical = 12.dp))
+
+                            // Card Border
+                            Text(text = "Card Border thickness: ${borderThickness.roundToInt()} px")
+                            Slider(
+                                value = borderThickness,
+                                onValueChange = { borderThickness = it },
+                                valueRange = 0f..50f
+                            )
+
+                            OutlinedTextField(
+                                value = borderColor,
+                                onValueChange = { borderColor = it },
+                                label = { Text("Card Border Color (HEX)") },
+                                placeholder = { Text("#000000") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+
+                // Section 6: Word replacement editor (text moderation replace.json)
+                item {
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(text = "Compliance Word Moderation (replace.json)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = newBadWord,
+                                    onValueChange = { newBadWord = it },
+                                    label = { Text("Word") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                OutlinedTextField(
+                                    value = newGoodWord,
+                                    onValueChange = { newGoodWord = it },
+                                    label = { Text("Moderate") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(
+                                    onClick = {
+                                        if (newBadWord.trim().isNotEmpty() && newGoodWord.trim().isNotEmpty()) {
+                                            replacementsList = replacementsList + (newBadWord.trim() to newGoodWord.trim())
+                                            newBadWord = ""
+                                            newGoodWord = ""
+                                        }
+                                    }
+                                ) {
+                                    Icon(imageVector = Icons.Rounded.Add, contentDescription = "Add")
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            replacementsList.forEach { (bad, good) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                                        .padding(8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(text = "$bad  →  $good", style = MaterialTheme.typography.bodyMedium)
+                                    IconButton(
+                                        onClick = {
+                                            replacementsList = replacementsList.filter { it.first != bad }
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Delete,
+                                            contentDescription = "Remove",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

@@ -96,12 +96,6 @@ fun SubscribeDialog(
                             }
 
                             Column {
-                                Text(
-                                    text = "Enter the secret key code (e.g. 28376) to download and extract the Photocard design.",
-                                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(bottom = 12.dp)
-                                )
-
                                 ClipboardTextField(
                                     state = state.linkState,
                                     modifier = Modifier.fillMaxWidth(),

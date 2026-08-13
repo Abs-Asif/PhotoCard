@@ -45,7 +45,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
@@ -76,6 +75,7 @@ import me.ash.reader.ui.ext.showToast
 import me.ash.reader.ui.graphics.MorphPolygonShape
 import me.ash.reader.ui.theme.palette.alwaysLight
 import me.ash.reader.ui.theme.palette.onLight
+import androidx.compose.ui.Alignment
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private val ShapeGacha by lazy {
@@ -161,14 +161,6 @@ fun TipsAndSupportPage(
                     tint = MaterialTheme.colorScheme.onSurface,
                     onClick = { showPasswordDialog = true }
                 )
-                Spacer(modifier = Modifier.width(16.dp))
-                FeedbackIconButton(
-                    modifier = Modifier.size(20.dp),
-                    imageVector = Icons.Rounded.Balance,
-                    contentDescription = stringResource(R.string.open_source_licenses),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    onClick = navigateToLicenseList
-                )
             }
         },
         content = {
@@ -181,31 +173,13 @@ fun TipsAndSupportPage(
                     Column(
                         modifier = Modifier.pointerInput(Unit) {
                             detectTapGestures(
-                                onPress = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                    scope.launch { morphProgress.animateTo(1f, morphSpec) }
-                                    tryAwaitRelease()
-                                    scope.launch { morphProgress.animateTo(0f, morphSpec) }
+                                onTap = {
                                     view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                     view.playSoundEffect(SoundEffectConstants.CLICK)
-                                },
-                                onTap = {
-                                    updateViewModel.checkUpdate(
-                                        {
-                                            context.showToast(context.getString(R.string.checking_updates))
-                                            context.dataStore.put(
-                                                DataStoreKey.skipVersionNumber,
-                                                ""
-                                            )
-                                        },
-                                        {
-                                            if (!it) {
-                                                context.showToast(
-                                                    context.getString(R.string.is_latest_version)
-                                                )
-                                            }
-                                        }
-                                    )
+                                    scope.launch {
+                                        morphProgress.animateTo(1f, morphSpec)
+                                        morphProgress.animateTo(0f, morphSpec)
+                                    }
                                 }
                             )
                         },
@@ -255,36 +229,34 @@ fun TipsAndSupportPage(
                 }
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp)
+                            .padding(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         listOf(
-                            Triple("Facebook", "https://www.facebook.com/abdullahbariasif", Icons.Rounded.Public to "https://www.facebook.com/abdullahbariasif"),
-                            Triple("WhatsApp", "01538310838", Icons.Rounded.Chat to "https://api.whatsapp.com/send?phone=8801538310838"),
-                            Triple("Call", "+8801738745285", Icons.Rounded.Call to "tel:+8801738745285"),
-                            Triple("Email", "abdullah.bari.2026@gmail.com", Icons.Rounded.Email to "mailto:abdullah.bari.2026@gmail.com")
-                        ).forEach { (title, display, pair) ->
-                            val (icon, uriString) = pair
-                            OutlinedButton(
+                            Icons.Rounded.Public to "https://www.facebook.com/abdullahbariasif",
+                            Icons.Rounded.Chat to "https://api.whatsapp.com/send?phone=8801538310838",
+                            Icons.Rounded.Call to "tel:+8801738745285",
+                            Icons.Rounded.Email to "mailto:abdullah.bari.2026@gmail.com"
+                        ).forEach { (icon, uriString) ->
+                            OutlinedIconButton(
                                 onClick = {
                                     runCatching {
                                         val action = if (uriString.startsWith("tel:")) Intent.ACTION_DIAL else if (uriString.startsWith("mailto:")) Intent.ACTION_SENDTO else Intent.ACTION_VIEW
                                         context.startActivity(Intent(action, Uri.parse(uriString)))
                                     }
                                 },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
+                                modifier = Modifier.size(56.dp),
+                                shape = CircleShape
                             ) {
                                 Icon(
                                     imageVector = icon,
                                     contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(24.dp)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = "$title: $display")
                             }
                         }
                     }

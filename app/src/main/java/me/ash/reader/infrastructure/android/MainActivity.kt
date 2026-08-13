@@ -66,6 +66,19 @@ class MainActivity : AppCompatActivity() {
 
         enableEdgeToEdge()
 
+        // Ask for unrestricted background usage on startup
+        val powerManager = getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
+        if (powerManager != null && !powerManager.isIgnoringBatteryOptimizations(packageName)) {
+            try {
+                val batteryIntent = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = android.net.Uri.parse("package:$packageName")
+                }
+                startActivity(batteryIntent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         // Set the language
         if (Build.VERSION.SDK_INT < 33) {
             LanguagesPreference.fromValue(languages).let { LanguagesPreference.setLocale(it) }

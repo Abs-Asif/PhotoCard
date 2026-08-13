@@ -78,7 +78,7 @@ constructor(
                 _subscribeState.value = SubscribeState.Hidden
                 onFinished(true, null)
             } else {
-                val errorMsg = result.exceptionOrNull()?.message ?: "Unknown error"
+                val errorMsg = "Nothing is found"
                 _subscribeState.value = SubscribeState.Idle(
                     linkState = currentState.linkState,
                     errorMessage = errorMsg
