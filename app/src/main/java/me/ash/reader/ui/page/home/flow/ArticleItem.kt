@@ -90,6 +90,7 @@ fun ArticleItem(
     modifier: Modifier = Modifier,
     articleWithFeed: ArticleWithFeed,
     isUnread: Boolean = articleWithFeed.article.isUnread,
+    isShowFeedName: Boolean = true,
     onClick: (ArticleWithFeed) -> Unit = {},
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -106,6 +107,7 @@ fun ArticleItem(
         imgData = article.img,
         isStarred = article.isStarred,
         isUnread = isUnread,
+        isShowFeedName = isShowFeedName,
         onClick = { onClick(articleWithFeed) },
         onLongClick = onLongClick,
     )
@@ -123,6 +125,7 @@ fun ArticleItem(
     imgData: Any? = null,
     isStarred: Boolean = false,
     isUnread: Boolean = false,
+    isShowFeedName: Boolean = true,
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -132,6 +135,8 @@ fun ArticleItem(
     val articleListDesc = LocalFlowArticleListDesc.current
     val articleListDate = LocalFlowArticleListTime.current
     val articleListReadIndicator = LocalFlowArticleListReadIndicator.current
+
+    val showFeedName = articleListFeedName.value && isShowFeedName
 
     Column(
         modifier =
@@ -149,12 +154,12 @@ fun ArticleItem(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Feed name
-            if (articleListFeedName.value) {
+            if (showFeedName) {
                 Text(
                     modifier =
                         Modifier.weight(1f)
                             .padding(
-                                start = if (articleListFeedIcon.value) 30.dp else 0.dp,
+                                start = 0.dp,
                                 end = 10.dp,
                             ),
                     text = feedName,
@@ -182,7 +187,7 @@ fun ArticleItem(
                 }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Spacer(Modifier.width(if (articleListFeedIcon.value) 30.dp else 0.dp))
+                    Spacer(Modifier.width(0.dp))
 
                     if (articleListDate.value) {
                         // Time
@@ -206,11 +211,7 @@ fun ArticleItem(
 
         // Bottom
         Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-            // Feed icon
-            if (articleListFeedIcon.value) {
-                FeedIcon(feedName = feedName, iconUrl = feedIconUrl)
-                Spacer(modifier = Modifier.width(10.dp))
-            }
+            // Feed icon removed
 
             // Article
             Column(modifier = Modifier.weight(1f)) {
@@ -229,7 +230,7 @@ fun ArticleItem(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    if (!articleListFeedName.value && !articleListDate.value) {
+                    if (!showFeedName && !articleListDate.value) {
                         if (isStarred) {
                             StarredIcon()
                         } else {
@@ -300,6 +301,7 @@ fun SwipeableArticleItem(
     articleWithFeed: ArticleWithFeed,
     isUnread: Boolean = articleWithFeed.article.isUnread,
     articleListTonalElevation: Int = 0,
+    isShowFeedName: Boolean = true,
     onClick: (ArticleWithFeed) -> Unit = {},
     isSwipeEnabled: () -> Boolean = { false },
     isMenuEnabled: Boolean = true,
@@ -349,6 +351,7 @@ fun SwipeableArticleItem(
             ArticleItem(
                 articleWithFeed = articleWithFeed,
                 isUnread = isUnread,
+                isShowFeedName = isShowFeedName,
                 onClick = onClick,
                 onLongClick = onLongClick,
             )

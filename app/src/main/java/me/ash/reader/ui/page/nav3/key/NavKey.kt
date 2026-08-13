@@ -12,14 +12,7 @@ sealed interface Route : NavKey {
     // Home
     @Serializable data object Feeds : Route
 
-    //    @Serializable data object Flow : Route
-
-    @Serializable
-    data class Reading(val articleId: String?) : Route {
-        companion object {
-            val Saver = Saver<Reading, String>(save = { it.articleId }, restore = { Reading(it) })
-        }
-    }
+    @Serializable data object Flow : Route
 
     // Settings
     @Serializable data object Settings : Route

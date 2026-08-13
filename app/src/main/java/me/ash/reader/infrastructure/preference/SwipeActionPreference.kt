@@ -44,7 +44,7 @@ sealed class SwipeEndActionPreference(val action: Int) : Preference() {
         }
 
     companion object {
-        val default: SwipeEndActionPreference = ToggleRead
+        val default: SwipeEndActionPreference = None
         val values = listOf(
             None,
             ToggleRead,
@@ -84,7 +84,7 @@ sealed class SwipeStartActionPreference(val action: Int) : Preference() {
         }
 
     companion object {
-        val default: SwipeStartActionPreference = ToggleStarred
+        val default: SwipeStartActionPreference = None
         val values = listOf(
             None,
             ToggleRead,

@@ -94,36 +94,13 @@ fun FeedOptionDrawer(
                 Spacer(modifier = Modifier.height(16.dp))
                 FeedOptionView(
                     link = feed?.url ?: stringResource(R.string.unknown),
-                    groups = feedOptionUiState.groups,
-                    selectedAllowNotificationPreset = feedOptionUiState.feed?.isNotification
-                        ?: false,
-                    selectedParseFullContentPreset = feedOptionUiState.feed?.isFullContent ?: false,
-                    selectedOpenInBrowserPreset = feedOptionUiState.feed?.isBrowser ?: false,
-                    isMoveToGroup = true,
-                    showGroup = feedOptionViewModel.rssService.get().moveSubscription,
                     showUnsubscribe = feedOptionViewModel.rssService.get().deleteSubscription,
                     notSubscribeMode = true,
-                    selectedGroupId = feedOptionUiState.feed?.groupId ?: "",
-                    allowNotificationPresetOnClick = {
-                        feedOptionViewModel.changeAllowNotificationPreset()
-                    },
-                    parseFullContentPresetOnClick = {
-                        feedOptionViewModel.changeParseFullContentPreset()
-                    },
-                    openInBrowserPresetOnClick = {
-                        feedOptionViewModel.changeOpenInBrowserPreset()
-                    },
                     clearArticlesOnClick = {
                         feedOptionViewModel.showClearDialog()
                     },
                     unsubscribeOnClick = {
                         feedOptionViewModel.showDeleteDialog()
-                    },
-                    onGroupClick = {
-                        feedOptionViewModel.selectedGroup(it)
-                    },
-                    onAddNewGroup = {
-                        feedOptionViewModel.showNewGroupDialog()
                     },
                     onFeedUrlClick = {
                         context.openURL(feed?.url, openLink, openLinkSpecificBrowser)

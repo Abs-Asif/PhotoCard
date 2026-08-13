@@ -37,7 +37,7 @@ import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -315,7 +315,7 @@ fun FlowPage(
                                 ),
                         ),
                 ) {
-                    LargeTopAppBar(
+                    TopAppBar(
                         modifier =
                             Modifier.clickable(
                                 onClick = {
@@ -329,36 +329,13 @@ fun FlowPage(
                                 interactionSource = remember { MutableInteractionSource() },
                             ),
                         title = {
-                            val textStyle = LocalTextStyle.current
-                            val color = LocalContentColor.current
-                            if (textStyle.fontSize.value > 18f) {
-                                BasicText(
-                                    modifier =
-                                        Modifier.padding(
-                                            start = if (articleListFeedIcon.value) 34.dp else 8.dp,
-                                            end = 24.dp,
-                                        ),
-                                    text = titleText,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = textStyle,
-                                    color = { color },
-                                    autoSize =
-                                        TextAutoSize.StepBased(
-                                            minFontSize = 28.sp,
-                                            maxFontSize = textStyle.fontSize,
-                                        ),
-                                )
-                            } else {
-                                Text(
-                                    text = titleText,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
+                            Text(
+                                text = titleText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.titleLarge,
+                            )
                         },
-                        expandedHeight = 172.dp,
-                        scrollBehavior = scrollBehavior,
                         navigationIcon = {
                             FeedbackIconButton(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
@@ -402,7 +379,7 @@ fun FlowPage(
                         },
                         colors =
                             TopAppBarDefaults.topAppBarColors(
-                                scrolledContainerColor = scrolledTopBarContainerColor
+                                containerColor = scrolledTopBarContainerColor
                             ),
                     )
                 }
@@ -626,7 +603,6 @@ fun FlowPage(
                                             }
                                         },
                                     )
-                                    .nestedScroll(scrollBehavior.nestedScrollConnection)
                                     .fillMaxSize()
                                     .drawVerticalScrollIndicator(listState),
                             state = listState,
@@ -634,9 +610,10 @@ fun FlowPage(
                             ArticleList(
                                 pagingItems = pagingItems,
                                 diffMap = viewModel.diffMapHolder.diffMap,
-                                isShowFeedIcon = articleListFeedIcon.value,
+                                isShowFeedIcon = false,
                                 isShowStickyHeader = articleListDateStickyHeader.value,
                                 articleListTonalElevation = articleListTonalElevation.value,
+                                isShowFeedName = filterState.feed == null,
                                 isSwipeEnabled = { listState.isScrollInProgress },
                                 onClick = { articleWithFeed, _ ->
                                     viewModel.diffMapHolder.updateDiff(

@@ -101,8 +101,6 @@ constructor(
     suspend fun initWithDefaultAccount() {
         val account = addDefaultAccount()
         val group = getDefaultGroup()
-        val initialFeed = getInitialFeed(account, group)
-        feedDao.insert(initialFeed)
     }
 
     private fun getInitialFeed(account: Account, group: Group): Feed =

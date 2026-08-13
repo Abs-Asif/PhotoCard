@@ -199,9 +199,9 @@ constructor(
                     searchedFeed = searchedFeed,
                     feedLink = state.feedLink,
                     groupId = state.selectedGroupId,
-                    isNotification = state.notification,
-                    isFullContent = state.fullContent,
-                    isBrowser = state.browser,
+                    isNotification = true,
+                    isFullContent = false,
+                    isBrowser = false,
                 )
             hideDrawer()
         }
@@ -300,7 +300,7 @@ sealed interface SubscribeState {
         val searchedFeed: SyndFeed,
         val feedLink: String,
         val groups: List<Group> = emptyList(),
-        val notification: Boolean = false,
+        val notification: Boolean = true,
         val fullContent: Boolean = false,
         val browser: Boolean = false,
         val selectedGroupId: String,
