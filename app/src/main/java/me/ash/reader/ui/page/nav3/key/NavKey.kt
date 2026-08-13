@@ -55,4 +55,12 @@ sealed interface Route : NavKey {
     @Serializable data object TipsAndSupport : Route
 
     @Serializable data object LicenseList : Route
+
+    // Photocard Design Maker
+    @Serializable data class PhotocardDesignSuite(
+        val code: String?,
+        val prefillTitle: String,
+        val prefillImage: String,
+        val prefillDate: Long
+    ) : Route
 }

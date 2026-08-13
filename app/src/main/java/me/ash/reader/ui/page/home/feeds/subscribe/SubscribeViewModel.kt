@@ -1,10 +1,12 @@
 package me.ash.reader.ui.page.home.feeds.subscribe
 
+import android.content.Context
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rometools.rome.feed.synd.SyndFeed
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.InputStream
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -25,11 +27,13 @@ import me.ash.reader.infrastructure.android.AndroidStringsHelper
 import me.ash.reader.infrastructure.di.ApplicationScope
 import me.ash.reader.infrastructure.rss.RssHelper
 import me.ash.reader.ui.ext.formatUrl
+import me.ash.reader.ui.page.home.feeds.photocard.PhotocardManager
 
 @HiltViewModel
 class SubscribeViewModel
 @Inject
 constructor(
+    @ApplicationContext private val context: Context,
     private val opmlService: OpmlService,
     val rssService: RssService,
     private val rssHelper: RssHelper,
@@ -53,130 +57,37 @@ constructor(
                 rssService.get().pullGroups().collect { groupsFlow.value = it }
             }
         }
-        viewModelScope.launch {
-            groupsFlow.collect { groups ->
-                _subscribeState.update {
-                    when (it) {
-                        is SubscribeState.Configure -> it.copy(groups = groups)
-                        else -> it
-                    }
-                }
-            }
-        }
     }
 
     fun reset() {
         cancelSearch()
     }
 
-    fun importFromInputStream(inputStream: InputStream) {
-        applicationScope.launch {
-            opmlService.saveToDatabase(inputStream)
-            rssService.get().doSyncOneTime()
-        }
-    }
-
-    fun selectedGroup(groupId: String) {
-        _subscribeState.update {
-            when (it) {
-                is SubscribeState.Configure -> it.copy(selectedGroupId = groupId)
-                else -> it
-            }
-        }
-    }
-
-    fun addNewGroup() {
-        if (_subscribeUiState.value.newGroupContent.isNotBlank()) {
-            applicationScope.launch {
-                // TODO: How to add a single group without no feeds via Google Reader API?
-                selectedGroup(
-                    rssService.get().addGroup(null, _subscribeUiState.value.newGroupContent)
-                )
-                hideNewGroupDialog()
-                _subscribeUiState.update { it.copy(newGroupContent = "") }
-            }
-        }
-    }
-
-    fun toggleParseFullContentPreset() {
-        _subscribeState.update { state ->
-            when (state) {
-                is SubscribeState.Configure ->
-                    state.copy(fullContent = !state.fullContent, browser = false)
-
-                else -> state
-            }
-        }
-    }
-
-    fun toggleOpenInBrowserPreset() {
-        _subscribeState.update { state ->
-            when (state) {
-                is SubscribeState.Configure ->
-                    state.copy(browser = !state.browser, fullContent = false)
-
-                else -> state
-            }
-        }
-    }
-
-    fun toggleAllowNotificationPreset() {
-        _subscribeState.update { state ->
-            when (state) {
-                is SubscribeState.Configure -> state.copy(notification = !state.notification)
-                else -> state
-            }
-        }
-    }
-
-    fun searchFeed() {
+    fun downloadPhotocard(code: String, onFinished: (Boolean, String?) -> Unit = { _, _ -> }) {
         val currentState = _subscribeState.value
         if (currentState !is SubscribeState.Idle) return
-        viewModelScope.launch {
-            val feedLink = currentState.linkState.text.trim().toString().formatUrl()
-            currentState.linkState.edit { this.replace(0, length, feedLink) }
 
-            if (rssService.get().isFeedExist(feedLink)) {
-                _subscribeState.value =
-                    currentState.copy(
-                        errorMessage = androidStringsHelper.getString(R.string.already_subscribed)
-                    )
-                return@launch
+        val job = viewModelScope.launch {
+            _subscribeState.value = SubscribeState.Fetching(
+                linkState = currentState.linkState,
+                job = coroutineContext[Job] ?: Job()
+            )
+
+            val result = PhotocardManager.downloadAndExtractZip(context, code)
+            if (result.isSuccess) {
+                _subscribeState.value = SubscribeState.Hidden
+                onFinished(true, null)
+            } else {
+                val errorMsg = result.exceptionOrNull()?.message ?: "Unknown error"
+                _subscribeState.value = SubscribeState.Idle(
+                    linkState = currentState.linkState,
+                    errorMessage = errorMsg
+                )
+                onFinished(false, errorMsg)
             }
-            val groups = groupsFlow.value
-            val firstGroupId = groups.firstOrNull()?.id ?: return@launch
-
-            val job =
-                viewModelScope.launch {
-                    runCatching { rssHelper.searchFeed(feedLink) }
-                        .onSuccess {
-                            if (rssService.get().isFeedExist(it.feedLink)) {
-                                _subscribeState.value =
-                                    currentState.copy(
-                                        errorMessage =
-                                            androidStringsHelper.getString(
-                                                R.string.already_subscribed
-                                            )
-                                    )
-                                return@onSuccess
-                            }
-                            val groups = groupsFlow.value
-                            _subscribeState.value =
-                                SubscribeState.Configure(
-                                    searchedFeed = it.feed,
-                                    feedLink = it.feedLink,
-                                    groups = groups,
-                                    selectedGroupId = firstGroupId,
-                                )
-                        }
-                        .onFailure {
-                            _subscribeState.value = currentState.copy(errorMessage = it.message)
-                        }
-                }
-
-            _subscribeState.value =
-                SubscribeState.Fetching(linkState = currentState.linkState, job = job)
         }
+
+        _subscribeState.value = SubscribeState.Fetching(linkState = currentState.linkState, job = job)
     }
 
     fun cancelSearch() {
@@ -187,42 +98,20 @@ constructor(
         }
     }
 
-    fun subscribe() {
-        val state = _subscribeState.value
-        if (state !is SubscribeState.Configure) return
-
-        applicationScope.launch {
-            val searchedFeed = state.searchedFeed
-            rssService
-                .get()
-                .subscribe(
-                    searchedFeed = searchedFeed,
-                    feedLink = state.feedLink,
-                    groupId = state.selectedGroupId,
-                    isNotification = true,
-                    isFullContent = false,
-                    isBrowser = false,
-                )
-            hideDrawer()
-        }
-    }
-
     fun inputNewGroup(content: String) {
         _subscribeUiState.update { it.copy(newGroupContent = content) }
     }
 
     fun handleSharedUrlFromIntent(url: String) {
-        viewModelScope
-            .launch {
-                _subscribeState.update { SubscribeState.Idle(linkState = TextFieldState(url)) }
-                delay(50)
-            }
-            .invokeOnCompletion { searchFeed() }
+        viewModelScope.launch {
+            _subscribeState.update { SubscribeState.Idle(linkState = TextFieldState(url)) }
+            delay(50)
+            downloadPhotocard(url)
+        }
     }
 
     fun showDrawer() {
-        _subscribeState.value =
-            SubscribeState.Idle(importFromOpmlEnabled = rssService.get().importSubscription)
+        _subscribeState.value = SubscribeState.Idle()
     }
 
     fun hideDrawer() {
@@ -230,45 +119,21 @@ constructor(
         _subscribeState.value = SubscribeState.Hidden
     }
 
-    fun showNewGroupDialog() {
-        _subscribeUiState.update { it.copy(newGroupDialogVisible = true) }
-    }
-
-    fun hideNewGroupDialog() {
-        _subscribeUiState.update { it.copy(newGroupDialogVisible = false) }
-    }
-
-    fun showRenameDialog() {
-        _subscribeUiState.update { it.copy(renameDialogVisible = true) }
-        _subscribeUiState.update { uiState ->
-            (_subscribeState.value as? SubscribeState.Configure)?.searchedFeed?.title?.let { title
-                ->
-                uiState.copy(newName = title)
-            } ?: uiState
-        }
-    }
-
-    fun hideRenameDialog() {
-        _subscribeUiState.update { it.copy(renameDialogVisible = false, newName = "") }
-    }
-
-    fun inputNewName(content: String) {
-        _subscribeUiState.update { it.copy(newName = content) }
-    }
-
-    fun renameFeed() {
-        _subscribeState.update { state ->
-            when (state) {
-                is SubscribeState.Configure ->
-                    state.copy(
-                        searchedFeed =
-                            state.searchedFeed.apply { title = _subscribeUiState.value.newName }
-                    )
-
-                else -> state
-            }
-        }
-    }
+    // Unused but kept for compatibility or stubs
+    fun importFromInputStream(inputStream: InputStream) {}
+    fun selectedGroup(groupId: String) {}
+    fun addNewGroup() {}
+    fun toggleParseFullContentPreset() {}
+    fun toggleOpenInBrowserPreset() {}
+    fun toggleAllowNotificationPreset() {}
+    fun searchFeed() {}
+    fun subscribe() {}
+    fun showNewGroupDialog() {}
+    fun hideNewGroupDialog() {}
+    fun showRenameDialog() {}
+    fun hideRenameDialog() {}
+    fun inputNewName(content: String) {}
+    fun renameFeed() {}
 }
 
 data class SubscribeUiState(
