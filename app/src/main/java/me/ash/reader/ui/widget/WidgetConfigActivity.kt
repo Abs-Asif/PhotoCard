@@ -84,9 +84,7 @@ class WidgetConfigActivity : ComponentActivity() {
 
         val appWidgetId = glanceManager.getAppWidgetId(glanceId)
 
-        val cardIds = runBlocking { glanceManager.getGlanceIds(ArticleCardWidget::class.java) }
-
-        val isCard = cardIds.contains(glanceId)
+        val isCard = false
 
         val resultValue = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         setResult(Activity.RESULT_CANCELED, resultValue)
@@ -195,11 +193,7 @@ class WidgetConfigActivity : ComponentActivity() {
         lifecycleScope
             .launch {
                 repository.writeConfig(appWidgetId, config)
-                if (isCard) {
-                    ArticleCardWidget().update(this@WidgetConfigActivity, id = glanceId)
-                } else {
-                    ArticleListWidget().update(this@WidgetConfigActivity, id = glanceId)
-                }
+                ArticleListWidget().update(this@WidgetConfigActivity, id = glanceId)
             }
             .invokeOnCompletion {
                 val resultValue =

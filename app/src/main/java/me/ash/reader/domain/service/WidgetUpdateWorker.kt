@@ -21,8 +21,6 @@ import java.util.concurrent.TimeUnit
 import me.ash.reader.infrastructure.preference.SyncIntervalPreference
 import me.ash.reader.infrastructure.preference.SyncOnlyOnWiFiPreference
 import me.ash.reader.infrastructure.preference.SyncOnlyWhenChargingPreference
-import me.ash.reader.ui.widget.ArticleCardWidget
-import me.ash.reader.ui.widget.ArticleCardWidgetReceiver
 import me.ash.reader.ui.widget.ArticleListWidget
 import me.ash.reader.ui.widget.ArticleListWidgetReceiver
 import me.ash.reader.ui.widget.WidgetRepository
@@ -44,7 +42,6 @@ constructor(
         }
 
         ArticleListWidget().updateAll(applicationContext)
-        ArticleCardWidget().updateAll(applicationContext)
         return Result.success()
     }
 
@@ -52,9 +49,8 @@ constructor(
     private suspend fun generatePreviews() {
         if (haveSetPreviews) return
         val glanceManager = GlanceAppWidgetManager(context)
-        val list = glanceManager.setWidgetPreviews(ArticleCardWidgetReceiver::class) == SET_WIDGET_PREVIEWS_RESULT_SUCCESS
-        val card = glanceManager.setWidgetPreviews(ArticleListWidgetReceiver::class) == SET_WIDGET_PREVIEWS_RESULT_SUCCESS
-        haveSetPreviews = list and card
+        val list = glanceManager.setWidgetPreviews(ArticleListWidgetReceiver::class) == SET_WIDGET_PREVIEWS_RESULT_SUCCESS
+        haveSetPreviews = list
     }
 
     companion object {
