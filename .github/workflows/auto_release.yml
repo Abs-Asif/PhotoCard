@@ -27,6 +27,7 @@ jobs:
       - name: Generate Demo Keystore and Properties
         run: |
           mkdir -p signature
+          rm -f signature/reader.keystore
           keytool -genkey -v -keystore signature/reader.keystore -alias Ashinch -keyalg RSA -keysize 2048 -validity 10000 -storepass @Ash1nch -keypass @Ash1nch -dname "CN=PhotoCard, OU=PhotoCard, O=PhotoCard, L=PhotoCard, S=PhotoCard, C=US"
           echo "storePassword=@Ash1nch" > signature/keystore_release.properties
           echo "keyPassword=@Ash1nch" >> signature/keystore_release.properties
