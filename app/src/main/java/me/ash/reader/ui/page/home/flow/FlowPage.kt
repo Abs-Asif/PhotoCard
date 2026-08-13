@@ -103,6 +103,7 @@ import me.ash.reader.ui.page.home.reading.PullToLoadDefaults.ContentOffsetMultip
 import me.ash.reader.ui.page.home.reading.PullToLoadState
 import me.ash.reader.ui.page.home.reading.pullToLoad
 import me.ash.reader.ui.page.home.reading.rememberPullToLoadState
+import me.ash.reader.ui.page.home.feeds.photocard.PhotocardBottomSheet
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -117,6 +118,7 @@ fun FlowPage(
     viewModel: ArticleListReaderViewModel,
     onNavigateUp: () -> Unit,
     navigateToArticle: (String, Int) -> Unit,
+    navigateToDesignSuite: (String?, String, String, Long) -> Unit,
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val articleListTonalElevation = LocalFlowArticleListTonalElevation.current
@@ -157,6 +159,8 @@ fun FlowPage(
     val focusRequester = remember { FocusRequester() }
     var markAsRead by remember { mutableStateOf(false) }
     var onSearch by rememberSaveable { mutableStateOf(false) }
+
+    var selectedArticleForPhotocard by remember { mutableStateOf<ArticleWithFeed?>(null) }
 
     var currentPullToLoadState: PullToLoadState? by remember { mutableStateOf(null) }
     var currentLoadAction: LoadAction? by remember { mutableStateOf(null) }
@@ -620,6 +624,7 @@ fun FlowPage(
                                         articleWithFeed,
                                         isUnread = false,
                                     )
+                                    selectedArticleForPhotocard = articleWithFeed
                                 },
                                 onToggleStarred = onToggleStarred,
                                 onToggleRead = onToggleRead,
@@ -655,5 +660,15 @@ fun FlowPage(
                         ),
             )
         }
+    }
+
+    selectedArticleForPhotocard?.let { article ->
+        PhotocardBottomSheet(
+            articleWithFeed = article,
+            onDismissRequest = { selectedArticleForPhotocard = null },
+            onEditClick = { code, title, img, date ->
+                navigateToDesignSuite(code, title, img, date)
+            }
+        )
     }
 }

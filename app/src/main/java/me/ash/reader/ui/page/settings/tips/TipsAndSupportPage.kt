@@ -20,8 +20,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Balance
@@ -29,22 +29,12 @@ import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.Chat
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Public
-import androidx.compose.material.icons.rounded.TipsAndUpdates
-import androidx.compose.material.icons.rounded.VolunteerActivism
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialShapes
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material3.*
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -67,6 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.graphics.shapes.Morph
@@ -106,11 +97,15 @@ fun TipsAndSupportPage(
     updateViewModel: UpdateViewModel = hiltViewModel(),
     onBack: () -> Unit,
     navigateToLicenseList: () -> Unit,
+    navigateToDesignSuite: (String?, String, String, Long) -> Unit,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
     var currentVersion by remember { mutableStateOf("") }
+
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var passwordInput by remember { mutableStateOf("") }
 
     val morphProgress = remember { Animatable(0f) }
 
@@ -143,7 +138,6 @@ fun TipsAndSupportPage(
 
     val logoBGColor = remember { colorGacha.random() }
 
-
     LaunchedEffect(Unit) {
         currentVersion = context.getCurrentVersion().toString()
     }
@@ -159,13 +153,23 @@ fun TipsAndSupportPage(
             )
         },
         actions = {
-            FeedbackIconButton(
-                modifier = Modifier.size(20.dp),
-                imageVector = Icons.Rounded.Balance,
-                contentDescription = stringResource(R.string.open_source_licenses),
-                tint = MaterialTheme.colorScheme.onSurface,
-                onClick = navigateToLicenseList
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FeedbackIconButton(
+                    modifier = Modifier.size(20.dp),
+                    imageVector = Icons.Rounded.Edit,
+                    contentDescription = "Design Suite",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    onClick = { showPasswordDialog = true }
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                FeedbackIconButton(
+                    modifier = Modifier.size(20.dp),
+                    imageVector = Icons.Rounded.Balance,
+                    contentDescription = stringResource(R.string.open_source_licenses),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    onClick = navigateToLicenseList
+                )
+            }
         },
         content = {
             LazyColumn(
@@ -289,6 +293,59 @@ fun TipsAndSupportPage(
             }
         }
     )
+
+    if (showPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showPasswordDialog = false
+                passwordInput = ""
+            },
+            icon = { Icon(imageVector = Icons.Rounded.Lock, contentDescription = "Password Required") },
+            title = { Text(text = "Password Required") },
+            text = {
+                Column {
+                    Text(
+                        text = "Enter the password to unlock the Photocard Design Maker Suite:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    OutlinedTextField(
+                        value = passwordInput,
+                        onValueChange = { passwordInput = it },
+                        placeholder = { Text(text = "Password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (passwordInput == "@Abs21221150057") {
+                            showPasswordDialog = false
+                            passwordInput = ""
+                            navigateToDesignSuite(null, "", "", 0L)
+                        } else {
+                            Toast.makeText(context, "Incorrect password!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                ) {
+                    Text(text = "Unlock")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showPasswordDialog = false
+                        passwordInput = ""
+                    }
+                ) {
+                    Text(text = "Cancel")
+                }
+            }
+        )
+    }
 
     UpdateDialog()
 }

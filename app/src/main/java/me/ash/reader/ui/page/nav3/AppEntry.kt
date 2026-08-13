@@ -49,6 +49,7 @@ import me.ash.reader.ui.page.settings.languages.LanguagesPage
 import me.ash.reader.ui.page.settings.tips.LicenseListPage
 import me.ash.reader.ui.page.settings.tips.TipsAndSupportPage
 import me.ash.reader.ui.page.startup.StartupPage
+import me.ash.reader.ui.page.home.feeds.photocard.PhotocardDesignSuitePage
 
 private const val INITIAL_OFFSET_FACTOR = 0.10f
 
@@ -121,7 +122,10 @@ fun AppEntry(backStack: NavBackStack<NavKey>) {
                                 viewModel = viewModel,
                                 onNavigateUp = onBack,
                                 isTwoPane = false,
-                                navigateToArticle = { _: String, _: Int -> }
+                                navigateToArticle = { _: String, _: Int -> },
+                                navigateToDesignSuite = { code, title, img, date ->
+                                    backStack.add(Route.PhotocardDesignSuite(code, title, img, date))
+                                }
                             )
                         }
                     }
@@ -208,9 +212,19 @@ fun AppEntry(backStack: NavBackStack<NavKey>) {
                             TipsAndSupportPage(
                                 onBack = onBack,
                                 navigateToLicenseList = { backStack.add(Route.LicenseList) },
+                                navigateToDesignSuite = { code, title, img, date ->
+                                    backStack.add(Route.PhotocardDesignSuite(code, title, img, date))
+                                }
                             )
                         }
                     Route.LicenseList -> NavEntry(key) { LicenseListPage(onBack = onBack) }
+                    is Route.PhotocardDesignSuite ->
+                        NavEntry(key) {
+                            PhotocardDesignSuitePage(
+                                key = key,
+                                onBack = onBack
+                            )
+                        }
                     else -> NavEntry(key) { throw Exception("Unknown destination") }
                 }
             },
