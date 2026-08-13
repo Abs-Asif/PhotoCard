@@ -83,9 +83,33 @@ object PhotocardManager {
                     entry = zis.nextEntry
                 }
             }
+            flattenIfNested(targetDir)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    private fun flattenIfNested(targetDir: File) {
+        if (File(targetDir, "card.json").exists()) {
+            return
+        }
+        val cardFile = targetDir.walkTopDown().firstOrNull { it.name == "card.json" }
+        if (cardFile != null && cardFile.parentFile != targetDir) {
+            val parentDir = cardFile.parentFile ?: return
+            val files = parentDir.listFiles() ?: return
+            for (file in files) {
+                val dest = File(targetDir, file.name)
+                if (dest.exists()) {
+                    dest.deleteRecursively()
+                }
+                file.renameTo(dest)
+            }
+            targetDir.listFiles()?.forEach { f ->
+                if (f.isDirectory && (f.listFiles() == null || f.listFiles()?.isEmpty() == true)) {
+                    f.delete()
+                }
+            }
         }
     }
 
@@ -113,14 +137,23 @@ object PhotocardManager {
         }
     }
 
+    fun normalizeUrl(url: String): String {
+        return url.trim()
+            .lowercase()
+            .removePrefix("https://")
+            .removePrefix("http://")
+            .removePrefix("www.")
+            .removeSuffix("/")
+    }
+
     fun findMatchingConfig(context: Context, articleFeedUrl: String?): Triple<String, PhotocardConfig, Map<String, String>>? {
         if (articleFeedUrl == null) return null
         val codes = listInstalledCodes(context)
         for (code in codes) {
             val configPair = getPhotocardConfig(context, code) ?: continue
             val config = configPair.first
-            val configUrl = config.source.url.trim().lowercase().removeSuffix("/")
-            val feedUrl = articleFeedUrl.trim().lowercase().removeSuffix("/")
+            val configUrl = normalizeUrl(config.source.url)
+            val feedUrl = normalizeUrl(articleFeedUrl)
             if (configUrl.isNotEmpty() && (configUrl == feedUrl || feedUrl.contains(configUrl) || configUrl.contains(feedUrl))) {
                 return Triple(code, config, configPair.second)
             }

@@ -61,4 +61,11 @@ class PhotocardTest {
 
         assertEquals("ধ*র্ষক এবং খ*নি ধরা পড়েছে।", title)
     }
+
+    @Test
+    fun testUrlNormalization() {
+        assertEquals("example.com/feed", PhotocardManager.normalizeUrl("https://www.example.com/feed/"))
+        assertEquals("example.com/feed", PhotocardManager.normalizeUrl("http://example.com/feed"))
+        assertEquals("example.com/feed", PhotocardManager.normalizeUrl("  HTTPS://WWW.EXAMPLE.COM/FEED  "))
+    }
 }
