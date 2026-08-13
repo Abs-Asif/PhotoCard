@@ -9,7 +9,7 @@ import java.text.Bidi
 object MimeType {
 
     const val ANY = "*/*"
-    const val FONT = "font/ttf"
+    const val FONT = "*/*"
     const val OPML = "text/x-opml"  // Not supported yet
     const val JSON = "application/json"
 }

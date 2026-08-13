@@ -41,6 +41,10 @@ class ExternalFonts(
             if (it.exists()) it.delete()
             if (it.createNewFile()) it.writeBytes(fontByteArray)
         }
+        when (type) {
+            FontType.BasicFont -> basicTypography = null
+            FontType.ReadingFont -> readingTypography = null
+        }
     }
 
     companion object {
