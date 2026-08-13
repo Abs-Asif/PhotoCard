@@ -32,6 +32,10 @@ proguard/
 # Android Studio captures folder
 captures/
 
+# Allow releases directory and release APK
+!releases/
+!releases/release.apk
+
 # Compiled class file
 *.class
 
